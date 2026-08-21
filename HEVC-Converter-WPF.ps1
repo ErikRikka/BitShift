@@ -153,7 +153,7 @@ $script:Str = @{
   codec_av1='AV1  ·  макс. сжатие'; codec_hevc='HEVC  ·  рекомендуется'; codec_dnxhr='DNxHR HQX  ·  грейдинг'
   audio_orig='Оригинал  ·  все каналы'; audio_aac='AAC стерео  ·  компактно'
   btn_browse='Обзор…'; btn_refresh='Обновить'; btn_start='Старт'; btn_pause='Пауза'; btn_resume='Продолжить'; btn_stop='Стоп'
-  btn_delete='Удалить проверенные в Корзину…'; btn_delete_n='Удалить {0} проверенных в Корзину…'
+  btn_delete='Удалить проверенные в Корзину…'; btn_delete_n='Удалить проверенные ({0}) в Корзину…'
   chk_sub='Включая подпапки'; chk_shutdown='Выключить компьютер после завершения'
   chk_auto='Удалять исходники в Корзину после проверки'
   hint_safety='Оригиналы не перезаписываются. Удаление — только в Корзину, после проверки.'
@@ -196,6 +196,7 @@ $script:Str = @{
   t_calc='считаю…'; t_finishing='завершаем…'
   sz_gb='{0:N1} ГБ'; sz_mb='{0:N0} МБ'; sz_kb='{0:N0} КБ'
   gpu_unknown='видеокарта'; err_none='без сообщения'
+  settings='НАСТРОЙКИ'; lang_label='Язык'; gear_tip='Настройки'
  }
  en = @{
   sec_mode='MODE'; sec_codec='CODEC'; sec_audio='AUDIO'; sec_volume='SIZE'; sec_left='REMAINING'
@@ -207,7 +208,7 @@ $script:Str = @{
   codec_av1='AV1  ·  smallest files'; codec_hevc='HEVC  ·  recommended'; codec_dnxhr='DNxHR HQX  ·  grading'
   audio_orig='Original  ·  all channels'; audio_aac='AAC stereo  ·  compact'
   btn_browse='Browse…'; btn_refresh='Refresh'; btn_start='Start'; btn_pause='Pause'; btn_resume='Resume'; btn_stop='Stop'
-  btn_delete='Move verified originals to Recycle Bin…'; btn_delete_n='Move {0} verified originals to Recycle Bin…'
+  btn_delete='Move verified originals to Recycle Bin…'; btn_delete_n='Move verified originals ({0}) to Recycle Bin…'
   chk_sub='Include subfolders'; chk_shutdown='Shut down the computer when finished'
   chk_auto='Move originals to Recycle Bin after verification'
   hint_safety='Originals are never overwritten. Deletion goes to the Recycle Bin only, after verification.'
@@ -250,6 +251,7 @@ $script:Str = @{
   t_calc='calculating…'; t_finishing='finishing…'
   sz_gb='{0:N1} GB'; sz_mb='{0:N0} MB'; sz_kb='{0:N0} KB'
   gpu_unknown='graphics card'; err_none='no message'
+  settings='SETTINGS'; lang_label='Language'; gear_tip='Settings'
  }
 }
 # язык системы: русская Windows -> русский, остальные -> английский
@@ -800,11 +802,38 @@ $xaml = @'
             </StackPanel>
           </RadioButton>
         </StackPanel>
-        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="2,0,0,9">
-          <TextBlock x:Name="LnkRu" Text="RU" FontSize="11" Cursor="Hand"/>
-          <TextBlock Text="·" Foreground="{StaticResource Tx3}" FontSize="11" Margin="7,0,7,0"/>
-          <TextBlock x:Name="LnkEn" Text="EN" FontSize="11" Cursor="Hand"/>
-        </StackPanel>
+        <!-- шестерёнка внизу рейла: редкие настройки спрятаны сюда, чтобы не шуметь
+             в основном экране. Всплывающая карточка появляется над значком -->
+        <Grid DockPanel.Dock="Bottom" Margin="0,0,0,8" HorizontalAlignment="Left">
+          <Border x:Name="BtnGear" Background="Transparent" CornerRadius="8" Padding="5" Cursor="Hand"
+                  ToolTip="Настройки">
+            <Grid Width="18" Height="18">
+              <Path x:Name="GearTeeth" Fill="{StaticResource Tx2}" Data="F0 M14.89,7.88 L17.26,7.49 L17.26,10.51 L14.89,10.12 L13.96,12.37 L15.91,13.78 L13.78,15.91 L12.37,13.96 L10.12,14.89 L10.51,17.26 L7.49,17.26 L7.88,14.89 L5.63,13.96 L4.22,15.91 L2.09,13.78 L4.04,12.37 L3.11,10.12 L0.74,10.51 L0.74,7.49 L3.11,7.88 L4.04,5.63 L2.09,4.22 L4.22,2.09 L5.63,4.04 L7.88,3.11 L7.49,0.74 L10.51,0.74 L10.12,3.11 L12.37,4.04 L13.78,2.09 L15.91,4.22 L13.96,5.63 Z M5.9,9 A3.1,3.1 0 1 0 12.1,9 A3.1,3.1 0 1 0 5.9,9 Z"/>
+            </Grid>
+          </Border>
+          <Popup x:Name="PopSettings" PlacementTarget="{Binding ElementName=BtnGear}" Placement="Top"
+                 VerticalOffset="-8" HorizontalOffset="-4" StaysOpen="False" AllowsTransparency="True"
+                 PopupAnimation="Fade">
+            <Border Background="#1C1C22" BorderBrush="{StaticResource Line}" BorderThickness="1"
+                    CornerRadius="12" Padding="15,13" Width="316">
+              <Border.Effect><DropShadowEffect Color="#000000" BlurRadius="26" ShadowDepth="3" Opacity="0.65"/></Border.Effect>
+              <StackPanel>
+                <TextBlock x:Name="LblSettings" Text="НАСТРОЙКИ" Foreground="{StaticResource Tx3}" FontSize="10.5" Margin="0,0,0,11"/>
+                <TextBlock x:Name="LblLangLabel" Text="Язык" Foreground="{StaticResource Tx2}" FontSize="11.5" Margin="0,0,0,6"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                  <TextBlock x:Name="LnkRu" Text="RU" FontSize="12.5" Cursor="Hand"/>
+                  <TextBlock Text="·" Foreground="{StaticResource Tx3}" FontSize="12.5" Margin="9,0,9,0"/>
+                  <TextBlock x:Name="LnkEn" Text="EN" FontSize="12.5" Cursor="Hand"/>
+                </StackPanel>
+                <Border Height="1" Background="{StaticResource Line}" Margin="0,0,0,13"/>
+                <CheckBox x:Name="ChkAuto" Content="Удалять исходники в Корзину после проверки" IsChecked="True"
+                          Foreground="{StaticResource Tx2}" FontSize="11.5" Margin="0,0,0,10" TextBlock.LineHeight="15"/>
+                <CheckBox x:Name="ChkShutdown" Content="Выключить компьютер после завершения"
+                          Foreground="{StaticResource Tx2}" FontSize="11.5"/>
+              </StackPanel>
+            </Border>
+          </Popup>
+        </Grid>
         <CheckBox x:Name="ChkSub" DockPanel.Dock="Bottom" Content="Включая подпапки" Foreground="{StaticResource Tx2}" FontSize="11.5" Margin="2,0,0,2"/>
         <StackPanel x:Name="StatsPanel" DockPanel.Dock="Bottom" Margin="2,0,0,12">
           <TextBlock x:Name="LblSecVolume" Text="ОБЪЁМ" Foreground="{StaticResource Tx3}" FontSize="10.5" Margin="0,0,0,5"/>
@@ -889,9 +918,7 @@ $xaml = @'
             <Button x:Name="BtnPause" Style="{StaticResource Flat}" Content="Пауза" IsEnabled="False" Margin="0,0,10,0"/>
             <Button x:Name="BtnStop" Style="{StaticResource Flat}" Content="Стоп" IsEnabled="False"/>
           </StackPanel>
-          <StackPanel HorizontalAlignment="Right">
-            <CheckBox x:Name="ChkShutdown" Content="Выключить компьютер после завершения" Foreground="{StaticResource Tx2}" FontSize="12" HorizontalAlignment="Right" Margin="0,0,2,9"/>
-            <CheckBox x:Name="ChkAuto" Content="Удалять исходники в Корзину после проверки" IsChecked="True" Foreground="{StaticResource Tx2}" FontSize="12" HorizontalAlignment="Right" Margin="0,0,2,9"/>
+          <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom">
             <Button x:Name="BtnDelete" Style="{StaticResource Flat}" Content="Удалить проверенные в Корзину…" HorizontalAlignment="Right" IsEnabled="False"/>
           </StackPanel>
         </Grid>
@@ -921,6 +948,9 @@ $LblMode0 = $Window.FindName('LblMode0'); $LblMode1 = $Window.FindName('LblMode1
 $LblCodec0 = $Window.FindName('LblCodec0'); $LblCodec1 = $Window.FindName('LblCodec1'); $LblCodec2 = $Window.FindName('LblCodec2')
 $LblAudio0 = $Window.FindName('LblAudio0'); $LblAudio1 = $Window.FindName('LblAudio1')
 $LnkRu = $Window.FindName('LnkRu'); $LnkEn = $Window.FindName('LnkEn')
+$BtnGear = $Window.FindName('BtnGear'); $PopSettings = $Window.FindName('PopSettings')
+$GearTeeth = $Window.FindName('GearTeeth')
+$LblSettings = $Window.FindName('LblSettings'); $LblLangLabel = $Window.FindName('LblLangLabel')
 $ImgLogo   = $Window.FindName('ImgLogo')
 # логотип рейла: та же картинка, что и иконка (кроп плитки из bitshift-source.png),
 # зашита сюда base64 — иначе exe зависел бы от внешнего файла
@@ -1100,6 +1130,9 @@ function Apply-Language {
   $ChkAuto.Content     = T 'chk_auto'
   if ($script:GoodSrc.Count -gt 0) { $BtnDelete.Content = ((T 'btn_delete_n') -f $script:GoodSrc.Count) }
   else { $BtnDelete.Content = T 'btn_delete' }
+  $LblSettings.Text  = T 'settings'
+  $LblLangLabel.Text = T 'lang_label'
+  $BtnGear.ToolTip   = T 'gear_tip'
   if ($script:Lang -eq 'ru') { $LnkRu.Foreground = $ClrTx; $LnkEn.Foreground = $ClrTx2 }
   else                       { $LnkRu.Foreground = $ClrTx2; $LnkEn.Foreground = $ClrTx }
   Update-DeviceLabel
@@ -1752,6 +1785,10 @@ function Browse-Folders {
   if ($picked.Count -gt 0) { Set-Roots $picked; Refresh-FileList }
 }
 $BtnBrowse.Add_Click({ Browse-Folders })
+$PopSettings.PlacementTarget = $BtnGear
+$BtnGear.Add_MouseLeftButtonUp({ $PopSettings.IsOpen = -not $PopSettings.IsOpen })
+$BtnGear.Add_MouseEnter({ $BtnGear.Background = (Br '#1EFFFFFF'); $GearTeeth.Fill = $ClrTx })
+$BtnGear.Add_MouseLeave({ $BtnGear.Background = [System.Windows.Media.Brushes]::Transparent; $GearTeeth.Fill = $ClrTx2 })
 $LnkRu.Add_MouseLeftButtonUp({ Set-Lang 'ru' })
 $LnkEn.Add_MouseLeftButtonUp({ Set-Lang 'en' })
 $BtnStart.Add_Click({ Start-Run })
