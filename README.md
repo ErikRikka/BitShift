@@ -1,124 +1,128 @@
 # BitShift
 
-Конвертер видеоархива для Windows. Пережимает отснятый материал в HEVC, AV1 или DNxHR
-на видеокарте NVIDIA — с проверкой каждого файла и без риска потерять оригиналы.
+Video archive converter for Windows. Re-encodes footage to HEVC, AV1 or DNxHR on an
+NVIDIA GPU — verifying every file and never putting your originals at risk.
 
-Реальный пример: папка концертных съёмок **155 ГБ → 27 ГБ** (4K H.264 → HEVC), качество
-на глаз не изменилось.
+A real example: a folder of concert footage went from **155 GB to 27 GB** (4K H.264 → HEVC)
+with no visible loss.
+
+Interface is available in **English and Russian** — it follows your Windows language and
+can be switched at the bottom of the sidebar.
+
+*Читаете по-русски? [README.ru.md](README.ru.md)*
 
 ---
 
-## Требования
+## Requirements
 
-Ограничения жёсткие, лучше проверить сразу:
+The constraints are strict, so check them first:
 
-- **Видеокарта NVIDIA** (GTX 16xx и новее) — всё кодирование идёт через NVENC.
-  На AMD и Intel Arc приложение не запустится.
-- **Windows 10 или 11.**
-- **ffmpeg** в системе (`ffmpeg` и `ffprobe` доступны из PATH).
+- **An NVIDIA graphics card** (GTX 16xx or newer) — all encoding runs on NVENC.
+  The app will not start on AMD or Intel Arc.
+- **Windows 10 or 11.**
+- **ffmpeg** on your system (`ffmpeg` and `ffprobe` available in PATH).
 
-Установка ffmpeg одной командой:
+Install ffmpeg with a single command:
 
 ```
 winget install Gyan.FFmpeg
 ```
 
-После установки закройте окно терминала, чтобы обновился PATH.
+Close the terminal window afterwards so PATH refreshes.
 
-## Запуск
+## Running it
 
-Скачайте `BitShift.exe` и запустите двойным кликом — установка не нужна, это один файл.
+Download `BitShift.exe` from [Releases](../../releases/latest) and double-click it —
+no installation, it is a single file.
 
-При первом запуске Windows SmartScreen может предупредить о неизвестном издателе
-(приложение не подписано сертификатом): «Подробнее» → «Выполнить в любом случае».
+On first launch Windows SmartScreen may warn about an unknown publisher (the app is not
+code-signed): **More info** → **Run anyway**.
 
-Альтернатива — запустить исходник напрямую, если не хотите доверять exe:
+If you would rather not trust the exe, run the source directly:
 
 ```
 powershell -STA -ExecutionPolicy Bypass -File HEVC-Converter-WPF.ps1
 ```
 
-## Что умеет
+## What it does
 
-**Три кодека:**
+**Three codecs:**
 
-| Кодек | Когда брать |
+| Codec | When to use it |
 |---|---|
-| **HEVC** | По умолчанию. Играет везде: Resolve, Premiere, телефон, телевизор |
-| **AV1** | Примерно на 20% компактнее при том же качестве, но декодируется не везде |
-| **DNxHR HQX** | Мастер под цветокоррекцию: 4:2:2, 10 бит, intra. Кодирует процессор |
+| **HEVC** | Default. Plays everywhere: Resolve, Premiere, phones, TVs |
+| **AV1** | Roughly 20% smaller at the same quality, but not decoded everywhere |
+| **DNxHR HQX** | Grading master: 4:2:2, 10-bit, intra. Encoded on the CPU |
 
-**Три режима** — под происхождение материала: «Старое видео» (AVI, WMV, MTS),
-«Съёмка с камеры» (Log/RAW, сжимает бережнее), «Обычное видео» (максимальная экономия).
+**Three modes** based on where the footage came from: *Old video* (AVI, WMV, MTS),
+*Camera footage* (Log/RAW, compressed gently), *Regular video* (maximum savings).
 
-Битрейт считается **для каждого файла отдельно** — по его разрешению, частоте кадров и
-исходному битрейту. Если выигрыш меньше 10%, файл не трогается.
+The bitrate is computed **per file** — from its resolution, frame rate and source bitrate.
+If the gain would be under 10%, the file is left alone.
 
-**Прогноз размера до запуска.** Видно «155 ГБ → ~27 ГБ, −82%» ещё до нажатия «Старт».
+**Size estimate before you start.** You see "155 GB → ~27 GB, −82%" before pressing Start.
 
-**Выбор судьбы звука.** Многодорожку с площадки можно сохранить целиком (все каналы,
-исходная разрядность) либо свести в стерео AAC. На 16-канальной записи разница в размере
-восьмикратная.
+**You choose what happens to audio.** Multi-track production sound can be kept intact
+(every channel, original bit depth) or downmixed to stereo AAC. On a 16-channel recording
+that is an eightfold difference in size.
 
-**Работа с медленными дисками.** Если материал на внешнем HDD, файлы по одному
-переносятся на внутренний SSD, кодируются там и возвращаются обратно — иначе диск
-захлёбывается от параллельных чтений. То, что уже на быстром диске, обрабатывается на
-месте.
+**Built for slow drives.** If footage sits on an external HDD, files are moved to the
+internal SSD one at a time, encoded there and moved back — otherwise the drive chokes on
+parallel reads. Anything already on a fast disk is processed in place.
 
-Плюс: несколько папок за один заход, пауза кодирования (освобождает видеокарту),
-оценка оставшегося времени по объёму, прогресс на каждом файле, выключение компьютера
-по завершении.
+Plus: several folders in one run, pausing (which frees the GPU), time remaining estimated
+by data volume, per-file progress, and shutdown when finished.
 
-## Безопасность данных
+## Data safety
 
-Это главное, ради чего инструмент писался.
+This is the whole reason the tool exists.
 
-- **Оригинал никогда не перезаписывается** — результат всегда отдельный файл с суффиксом `_v2`.
-- **Удаление только в Корзину.** Безвозвратного удаления нет вообще, ни одной кнопкой.
-- Оригинал удаляется только если результат прошёл **все четыре проверки**:
-  1. результат действительно в нужном кодеке;
-  2. длительность совпала с точностью до 2%;
-  3. число видеокадров сошлось с точностью до ±2;
-  4. файл полностью декодировался без ошибок.
+- **Originals are never overwritten** — results are separate files with a `_v2` suffix.
+- **Deletion goes to the Recycle Bin only.** There is no permanent delete anywhere in the app.
+- An original is removed only after the result passes **all four checks**:
+  1. the result really is in the expected codec;
+  2. duration matches within 2%;
+  3. frame count matches within ±2;
+  4. the file decodes completely without errors.
 
-Провалил проверку — исходник остаётся на месте.
+Fail any of them and the original stays where it is.
 
-Проверка нужнее, чем кажется: аппаратный декодер на 10-битном 4:2:2 умеет **молча**
-потерять первые кадры группы. Файл открывается, выглядит целым, а начало съедено —
-сверка числа кадров ловит именно это.
+That verification matters more than it sounds: a hardware decoder can **silently** drop the
+first frames of a GOP on 10-bit 4:2:2 footage. The file opens, looks fine, and the beginning
+is gone — the frame count check is what catches it.
 
-**На первом прогоне снимите галочку автоудаления**: посмотрите результат глазами и
-только потом доверяйте инструменту Корзину.
+**On your first run, untick the auto-delete box**: look at the results yourself, then let
+the tool handle the Recycle Bin.
 
-## Ограничения
+## Limitations
 
-- Только NVIDIA, только Windows.
-- Версии для macOS пока нет (заготовка для порта — в `docs-mac-port.md`).
-- Приложение не подписано, SmartScreen будет предупреждать.
-- Это личный инструмент, а не коробочный продукт: писался под конкретную задачу и
-  проверялся на конкретной машине.
+- NVIDIA only, Windows only.
+- No macOS build yet (porting notes live in `docs-mac-port.md`).
+- The app is unsigned, so SmartScreen will warn about it.
+- This is a personal tool rather than a polished product: it was built for one specific job
+  and tested on one machine.
 
-## Файлы
+## Files
 
-| Файл | Что это |
+| File | What it is |
 |---|---|
-| `BitShift.exe` | Готовое приложение, собрано из `HEVC-Converter-WPF.ps1` через ps2exe |
-| `HEVC-Converter-WPF.ps1` | Исходный код (PowerShell + WPF). Историческое имя, менять его пока не стали |
-| `bitshift.ico`, `bitshift-source.png` | Иконка и её исходник |
-| `CLAUDE.md` | Технические заметки: архитектура, замеры, выстраданные грабли |
-| `docs-mac-port.md` | Что нужно перенести в версию для macOS |
+| `BitShift.exe` | The application, built from `HEVC-Converter-WPF.ps1` with ps2exe |
+| `HEVC-Converter-WPF.ps1` | Source (PowerShell + WPF). The filename is historical |
+| `bitshift.ico`, `bitshift-source.png` | Icon and its master image |
+| `CLAUDE.md` | Engineering notes: architecture, measurements, hard-won pitfalls (in Russian) |
+| `docs-mac-port.md` | What needs porting to macOS (in Russian) |
 
-## Сборка exe
+## Building the exe
 
-Нужен модуль ps2exe (`Install-Module ps2exe -Scope CurrentUser`):
+Requires the ps2exe module (`Install-Module ps2exe -Scope CurrentUser`):
 
 ```
-Invoke-ps2exe -inputFile HEVC-Converter-WPF.ps1 -outputFile BitShift.exe -iconFile bitshift.ico -noConsole -STA -title BitShift -product BitShift -version 3.3.0.0
+Invoke-ps2exe -inputFile HEVC-Converter-WPF.ps1 -outputFile BitShift.exe -iconFile bitshift.ico -noConsole -STA -title BitShift -product BitShift -version 3.4.0.0
 ```
 
-Исходник должен быть сохранён в **UTF-8 с BOM**, иначе PowerShell 5.1 читает кириллицу
-неправильно.
+The source must be saved as **UTF-8 with BOM**, otherwise PowerShell 5.1 misreads Cyrillic
+characters in the interface strings.
 
-## Лицензия
+## Licence
 
-MIT — см. [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).

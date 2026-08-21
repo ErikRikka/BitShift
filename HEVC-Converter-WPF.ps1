@@ -138,10 +138,162 @@ $ClrGreen = Br '#5FCE9A'; $ClrBlue = Br '#7FB2EE'; $ClrRed = Br '#E8756F'
 $ClrViolet = Br '#A99BF0'          # этап проверки
 $ROWBAR_W = 300.0                  # ширина шкалы в строке (см. Width у Border в шаблоне)
 
+# ---------------- локализация ----------------
+# Интерфейс на двух языках. Язык берётся из системы (русская Windows -> русский,
+# остальные -> английский), пользователь может переключить вручную.
+# Комментарии, лог-файл и техзаметки остаются на русском — это рабочая кухня.
+$script:Str = @{
+ ru = @{
+  sec_mode='РЕЖИМ'; sec_codec='КОДЕК'; sec_audio='ЗВУК'; sec_volume='ОБЪЁМ'; sec_left='ОСТАЛОСЬ'
+  mode_old='Старое видео'; mode_cam='Съёмка с камеры'; mode_arc='Обычное видео'
+  mode_old_full='Старое видео (AVI, WMV, MTS)'; mode_cam_full='Съёмка с камеры (Log/RAW)'; mode_arc_full='Обычное видео'
+  mode_old_tip='Файлы AVI, WMV, MTS — старые камеры и видеокассеты. Результат в MP4.'
+  mode_cam_tip="MP4/MOV прямо с камеры (Log, S-Log3, плоская картинка).`nСжимает бережнее: сохраняет 10 бит и цвет для дальнейшей обработки."
+  mode_arc_tip="MP4/MOV: смонтированные ролики, съёмки с телефона, архив.`nМаксимальная экономия места. Уже компактные файлы пропускаются."
+  codec_av1='AV1  ·  макс. сжатие'; codec_hevc='HEVC  ·  рекомендуется'; codec_dnxhr='DNxHR HQX  ·  грейдинг'
+  audio_orig='Оригинал  ·  все каналы'; audio_aac='AAC стерео  ·  компактно'
+  btn_browse='Обзор…'; btn_refresh='Обновить'; btn_start='Старт'; btn_pause='Пауза'; btn_resume='Продолжить'; btn_stop='Стоп'
+  btn_delete='Удалить проверенные в Корзину…'; btn_delete_n='Удалить {0} проверенных в Корзину…'
+  chk_sub='Включая подпапки'; chk_shutdown='Выключить компьютер после завершения'
+  chk_auto='Удалять исходники в Корзину после проверки'
+  hint_safety='Оригиналы не перезаписываются. Удаление — только в Корзину, после проверки.'
+  lbl_to_process='К обработке: '; lbl_src_total='Объём исходников: '
+  lbl_saved='Сэкономлено: {0} · −{1}%'; lbl_saved_none='Сэкономлено: —'
+  lbl_forecast='Прогноз: ~{0} · −{1}%'; lbl_forecast_calc='Прогноз: считаю… {0}/{1}'; lbl_forecast_na='Прогноз: недоступен'
+  dev_cpu='Кодирует процессор'; dev_gpu_tip='Кодирует видеокарта {0} (NVENC)'
+  dev_cpu_tip='{0} кодируется процессором — видеокарта этот кодек не умеет'
+  st_queued='в очереди'; st_encoding='кодирую {0}%'; st_encoding_start='кодирую… ({0} -> {1} кбит/с)'
+  st_verifying='проверяю {0}%'; st_verify_wait='проверяю…'; st_done='готово'
+  st_verified='проверен — оригинал можно удалять'; st_verified_moved='готово, проверен — оригинал можно удалять'
+  st_verified_wait_move='проверен — жду переноса с SSD'; st_moving='переношу результат…'
+  st_in_trash='оригинал в Корзине'; st_not_deleted='НЕ удалился'; st_stopped='остановлено'
+  st_unchecked='снята галочка — пропущен'; st_ready_pair='уже готов — на проверку'
+  st_collision='коллизия имён — пропущен'; st_copying='копирую на SSD…'; st_on_ssd='на SSD, жду слот кодирования'
+  st_fast_disk='на быстром диске — кодирую на месте'; st_low_space='мало места на SSD — кодирую напрямую'
+  st_hw_retry='hw-декодер не справился — повтор на CPU'; st_audio_retry='звук не скопировался — повтор с AAC'
+  st_gone='файл исчез'; st_error='ОШИБКА: '; st_fail='ПРОВАЛ проверки: {0} — оригинал оставлен'
+  st_copy_fail='ошибка копирования на SSD (robocopy {0})'; st_move_fail='НЕ смог перенести результат с SSD (robocopy {0})'
+  skip_hevc='пропуск: уже HEVC'; skip_compact='пропуск: уже компактный'; skip_gain='пропуск: выигрыш < 10%'
+  ready_hevc='уже HEVC — пропуск'; ready_compact='уже компактный — пропуск'
+  bad_nofile='файла нет'; bad_codec='результат не тот кодек ({0})'; bad_noduration='нет длительности'
+  bad_duration='длительность не совпала'; bad_frames='кадры: {0} vs {1}'; bad_decode='ошибки декодирования'
+  run_paused='⏸ ПАУЗА'; run_encoding='кодирование {0}/{1} (в работе {2})'; run_verified='проверено {0}{1}'
+  run_failed='провал {0}'; run_moving='перенос результатов…'
+  list_summary='{0} новых, {1} уже готово. Сними галочки с ненужных.'
+  count_line='{0} файлов{1} · кодек {2}'; folders_note=' · папок {0}'; folders_multi='Папок: {0} — {1}'
+  finish='Готово. Сконвертировано {0}, пропущено {1}, ошибок {2}. Проверено целых {3} из {4}.'
+  stopped_hint='Остановлено. Готовые пары можно проверить, нажав Старт ещё раз.'
+  trash_result='В Корзину: {0}, проблем: {1}.'
+  dlg_nofiles='Нет ни выбранных файлов, ни готовых пар для проверки.'
+  dlg_confirm="Проверка пройдена: {0} файлов.`n`nУдалить {0} проверенных оригиналов в Корзину?`nИз Корзины всё можно вернуть."
+  dlg_closing='Идёт работа. Прервать и выйти?'
+  dlg_browse='Папка с видео (можно с подпапками)'; dlg_browse_multi='Папки с видео — можно выбрать несколько (Ctrl)'
+  fail_ffmpeg="ffmpeg не найден. Установи его командой:`n`n    winget install Gyan.FFmpeg`n`nи запусти конвертер заново."
+  fail_nvenc="В этой сборке ffmpeg нет hevc_nvenc.`nПоставь стандартную сборку: winget install Gyan.FFmpeg"
+  shutdown_note='Компьютер выключится через {0} с. Отмена: shutdown /a'
+  shutdown_reason='Конвертация завершена — выключение'
+  t_lessmin='меньше минуты'; t_min='~{0} мин'; t_hour='~{0} ч'; t_hourmin='~{0} ч {1} мин'; t_day='~{0} дн {1} ч'
+  t_calc='считаю…'; t_finishing='завершаем…'
+  sz_gb='{0:N1} ГБ'; sz_mb='{0:N0} МБ'; sz_kb='{0:N0} КБ'
+  gpu_unknown='видеокарта'; err_none='без сообщения'
+ }
+ en = @{
+  sec_mode='MODE'; sec_codec='CODEC'; sec_audio='AUDIO'; sec_volume='SIZE'; sec_left='REMAINING'
+  mode_old='Old video'; mode_cam='Camera footage'; mode_arc='Regular video'
+  mode_old_full='Old video (AVI, WMV, MTS)'; mode_cam_full='Camera footage (Log/RAW)'; mode_arc_full='Regular video'
+  mode_old_tip='AVI, WMV and MTS files — old camcorders and tapes. Output is MP4.'
+  mode_cam_tip="MP4/MOV straight off the camera (Log, S-Log3, flat picture).`nCompresses gently: keeps 10-bit and colour for grading."
+  mode_arc_tip="MP4/MOV: edited videos, phone footage, archive.`nMaximum space savings. Already-compact files are skipped."
+  codec_av1='AV1  ·  smallest files'; codec_hevc='HEVC  ·  recommended'; codec_dnxhr='DNxHR HQX  ·  grading'
+  audio_orig='Original  ·  all channels'; audio_aac='AAC stereo  ·  compact'
+  btn_browse='Browse…'; btn_refresh='Refresh'; btn_start='Start'; btn_pause='Pause'; btn_resume='Resume'; btn_stop='Stop'
+  btn_delete='Move verified originals to Recycle Bin…'; btn_delete_n='Move {0} verified originals to Recycle Bin…'
+  chk_sub='Include subfolders'; chk_shutdown='Shut down the computer when finished'
+  chk_auto='Move originals to Recycle Bin after verification'
+  hint_safety='Originals are never overwritten. Deletion goes to the Recycle Bin only, after verification.'
+  lbl_to_process='To process: '; lbl_src_total='Source size: '
+  lbl_saved='Saved: {0} · −{1}%'; lbl_saved_none='Saved: —'
+  lbl_forecast='Estimate: ~{0} · −{1}%'; lbl_forecast_calc='Estimate: calculating… {0}/{1}'; lbl_forecast_na='Estimate: not available'
+  dev_cpu='Encoding on CPU'; dev_gpu_tip='Encoded by {0} (NVENC)'
+  dev_cpu_tip='{0} is encoded on the CPU — the GPU does not support this codec'
+  st_queued='queued'; st_encoding='encoding {0}%'; st_encoding_start='encoding… ({0} -> {1} kbit/s)'
+  st_verifying='verifying {0}%'; st_verify_wait='verifying…'; st_done='done'
+  st_verified='verified — original can be removed'; st_verified_moved='done and verified — original can be removed'
+  st_verified_wait_move='verified — waiting to move from SSD'; st_moving='moving result…'
+  st_in_trash='original in Recycle Bin'; st_not_deleted='could not delete'; st_stopped='stopped'
+  st_unchecked='unchecked — skipped'; st_ready_pair='already encoded — will verify'
+  st_collision='name collision — skipped'; st_copying='copying to SSD…'; st_on_ssd='on SSD, waiting for a slot'
+  st_fast_disk='already on a fast disk — encoding in place'; st_low_space='not enough SSD space — encoding in place'
+  st_hw_retry='hardware decoder failed — retrying on CPU'; st_audio_retry='audio could not be copied — retrying with AAC'
+  st_gone='file is gone'; st_error='ERROR: '; st_fail='VERIFICATION FAILED: {0} — original kept'
+  st_copy_fail='failed to copy to SSD (robocopy {0})'; st_move_fail='could not move result from SSD (robocopy {0})'
+  skip_hevc='skipped: already HEVC'; skip_compact='skipped: already compact'; skip_gain='skipped: gain below 10%'
+  ready_hevc='already HEVC — skipped'; ready_compact='already compact — skipped'
+  bad_nofile='file missing'; bad_codec='wrong codec in result ({0})'; bad_noduration='no duration'
+  bad_duration='duration mismatch'; bad_frames='frames: {0} vs {1}'; bad_decode='decoding errors'
+  run_paused='⏸ PAUSED'; run_encoding='encoding {0}/{1} ({2} running)'; run_verified='verified {0}{1}'
+  run_failed='failed {0}'; run_moving='moving results…'
+  list_summary='{0} new, {1} already done. Untick what you do not need.'
+  count_line='{0} files{1} · codec {2}'; folders_note=' · {0} folders'; folders_multi='Folders: {0} — {1}'
+  finish='Finished. Converted {0}, skipped {1}, errors {2}. Verified intact {3} of {4}.'
+  stopped_hint='Stopped. Finished pairs can be verified by pressing Start again.'
+  trash_result='Moved to Recycle Bin: {0}, problems: {1}.'
+  dlg_nofiles='Nothing to do: no files selected and no finished pairs to verify.'
+  dlg_confirm="Verification passed: {0} files.`n`nMove {0} verified originals to the Recycle Bin?`nEverything can be restored from there."
+  dlg_closing='A run is in progress. Abort and quit?'
+  dlg_browse='Folder with video (subfolders optional)'; dlg_browse_multi='Folders with video — you can pick several (Ctrl)'
+  fail_ffmpeg="ffmpeg not found. Install it with:`n`n    winget install Gyan.FFmpeg`n`nthen start BitShift again."
+  fail_nvenc="This ffmpeg build has no hevc_nvenc.`nInstall a standard build: winget install Gyan.FFmpeg"
+  shutdown_note='The computer will shut down in {0} s. Cancel with: shutdown /a'
+  shutdown_reason='Conversion finished — shutting down'
+  t_lessmin='less than a minute'; t_min='~{0} min'; t_hour='~{0} h'; t_hourmin='~{0} h {1} min'; t_day='~{0} d {1} h'
+  t_calc='calculating…'; t_finishing='finishing…'
+  sz_gb='{0:N1} GB'; sz_mb='{0:N0} MB'; sz_kb='{0:N0} KB'
+  gpu_unknown='graphics card'; err_none='no message'
+ }
+}
+# язык системы: русская Windows -> русский, остальные -> английский
+# выбор языка запоминается между запусками: у пользователя может быть английская
+# система при русском интерфейсе (и наоборот)
+$script:LangFile = Join-Path $env:LOCALAPPDATA 'BitShift-lang.txt'
+function Detect-Lang {
+  try {
+    if (Test-Path -LiteralPath $script:LangFile) {
+      $s = (Get-Content -LiteralPath $script:LangFile -TotalCount 1 -ErrorAction Stop).Trim().ToLower()
+      if ($s -eq 'ru' -or $s -eq 'en') { return $s }
+    }
+  } catch {}
+  try {
+    $c = [System.Globalization.CultureInfo]::CurrentUICulture.TwoLetterISOLanguageName
+    if ($c -eq 'ru') { return 'ru' }
+  } catch {}
+  return 'en'
+}
+function Save-Lang {
+  try { Set-Content -LiteralPath $script:LangFile -Value $script:Lang -Encoding ASCII -ErrorAction Stop } catch {}
+}
+$script:Lang = Detect-Lang
+# разделители чисел должны соответствовать языку интерфейса: 4.9 GB против 4,9 ГБ.
+# Разбор данных ffprobe идёт через InvariantCulture, так что это безопасно.
+function Apply-Culture {
+  try {
+    $name = 'en-US'; if ($script:Lang -eq 'ru') { $name = 'ru-RU' }
+    [System.Threading.Thread]::CurrentThread.CurrentCulture = [System.Globalization.CultureInfo]::GetCultureInfo($name)
+  } catch {}
+}
+Apply-Culture
+function T([string]$k) {
+  $d = $script:Str[$script:Lang]
+  if ($d -and $d.ContainsKey($k)) { return [string]$d[$k] }
+  $e = $script:Str['en']
+  if ($e -and $e.ContainsKey($k)) { return [string]$e[$k] }
+  return $k
+}
+
 function HumanSize([long]$b) {
-  if ($b -ge 1GB) { return ('{0:N1} ГБ' -f ($b / 1GB)) }
-  if ($b -ge 1MB) { return ('{0:N0} МБ' -f ($b / 1MB)) }
-  return ('{0:N0} КБ' -f ($b / 1KB))
+  if ($b -ge 1GB) { return ((T 'sz_gb') -f ($b / 1GB)) }
+  if ($b -ge 1MB) { return ((T 'sz_mb') -f ($b / 1MB)) }
+  return ((T 'sz_kb') -f ($b / 1KB))
 }
 
 $script:BaseDir = $PSScriptRoot
@@ -164,9 +316,9 @@ $ARC_BPP = 0.096
 $EST_OVERHEAD = 1.15     # поправка прогноза: NVENC превышает целевой битрейт + контейнер
 $PRESET  = 'p5'
 $Modes = @(
-  [pscustomobject]@{ Kind='old'; Ratio=55;  Floor=1500000; BppMin=0.0;      BppMax=0.15;     Ext=@('.avi','.wmv','.mts'); Name='Старое видео (AVI, WMV, MTS)' }
-  [pscustomobject]@{ Kind='cam'; Ratio=45;  Floor=0;       BppMin=0.10;     BppMax=0.20;     Ext=@('.mp4','.mov');        Name='Съёмка с камеры (Log/RAW)' }
-  [pscustomobject]@{ Kind='arc'; Ratio=100; Floor=0;       BppMin=$ARC_BPP; BppMax=$ARC_BPP; Ext=@('.mp4','.mov');        Name='Обычное видео' }
+  [pscustomobject]@{ Kind='old'; Ratio=55;  Floor=1500000; BppMin=0.0;      BppMax=0.15;     Ext=@('.avi','.wmv','.mts'); NameKey='mode_old_full' }
+  [pscustomobject]@{ Kind='cam'; Ratio=45;  Floor=0;       BppMin=0.10;     BppMax=0.20;     Ext=@('.mp4','.mov');        NameKey='mode_cam_full' }
+  [pscustomobject]@{ Kind='arc'; Ratio=100; Floor=0;       BppMin=$ARC_BPP; BppMax=$ARC_BPP; Ext=@('.mp4','.mov');        NameKey='mode_arc_full' }
 )
 $Codecs = @(
   [pscustomobject]@{ Key='av1';   Enc='av1_nvenc';  OutCodec='av1';   Gpu=$true;  Compress=$true;  Container='mp4';  Tag='';     Profile='' }
@@ -196,11 +348,11 @@ function Fail([string]$msg) {
   Log "ошибка запуска: $msg"; exit 1
 }
 if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue) -or -not (Get-Command ffprobe -ErrorAction SilentlyContinue)) {
-  Fail ("ffmpeg не найден. Установи его командой:`n`n    winget install Gyan.FFmpeg`n`nи запусти конвертер заново.")
+  Fail (T 'fail_ffmpeg')
 }
 $script:HasNvenc = [bool](& ffmpeg -hide_banner -encoders 2>$null | Select-String -SimpleMatch 'hevc_nvenc' -Quiet)
 if (-not $script:HasNvenc) {
-  Fail ("В этой сборке ffmpeg нет hevc_nvenc.`nПоставь стандартную сборку: winget install Gyan.FFmpeg")
+  Fail (T 'fail_nvenc')
 }
 # какая видеокарта в этой машине (у другого пользователя она будет своя)
 function Detect-Gpu {
@@ -213,7 +365,7 @@ function Detect-Gpu {
     try { $n = [string]((Get-CimInstance Win32_VideoController -ErrorAction Stop | Select-Object -First 1).Name) } catch {}
   }
   $n = ($n -replace '(?i)nvidia\s*', '' -replace '(?i)geforce\s*', '' -replace '(?i)\s*gpu$', '').Trim()
-  if (-not $n) { $n = 'видеокарта' }
+  if (-not $n) { $n = (T 'gpu_unknown') }
   return $n
 }
 $script:GpuName = Detect-Gpu
@@ -305,7 +457,7 @@ function AudioArgs($item) {
 function ErrSummary([string]$file) {
   $lines = @()
   try { $lines = @(Get-Content -LiteralPath $file -ErrorAction SilentlyContinue | Where-Object { $_ -and $_.Trim() }) } catch {}
-  if ($lines.Count -eq 0) { return 'без сообщения' }
+  if ($lines.Count -eq 0) { return (T 'err_none') }
   $bad = @($lines | Where-Object { $_ -notmatch '(?i)Guessed Channel Layout' -and $_ -match '(?i)(error|unsupported|invalid|failed|not supported|no space|denied|cannot|could not)' })
   if ($bad.Count -gt 0) { return (($bad | Select-Object -First 2) -join ' | ') }
   return (($lines | Select-Object -Last 2) -join ' | ')
@@ -591,69 +743,74 @@ $xaml = @'
           <TextBlock x:Name="TxtFolder" Text="—" Foreground="{StaticResource Tx2}" FontSize="12"
                      Margin="1,15,0,0" TextTrimming="CharacterEllipsis"/>
 
-          <TextBlock Text="РЕЖИМ" Foreground="{StaticResource Tx3}" FontSize="10.5" Margin="0,16,0,5"/>
+          <TextBlock x:Name="LblSecMode" Text="РЕЖИМ" Foreground="{StaticResource Tx3}" FontSize="10.5" Margin="0,16,0,5"/>
           <RadioButton x:Name="Mode0" GroupName="M" Style="{StaticResource Nav}"
                        ToolTip="Файлы AVI, WMV, MTS — старые камеры и видеокассеты. Результат в MP4.">
             <StackPanel Orientation="Horizontal">
               <Path Style="{StaticResource NavIcon}" Data="M1.5,3.5 H14.5 V12.5 H1.5 Z M4.5,3.5 V12.5 M11.5,3.5 V12.5"/>
-              <TextBlock Text="Старое видео" VerticalAlignment="Center"/>
+              <TextBlock x:Name="LblMode0" Text="Старое видео" VerticalAlignment="Center"/>
             </StackPanel>
           </RadioButton>
           <RadioButton x:Name="Mode1" GroupName="M" Style="{StaticResource Nav}"
                        ToolTip="MP4/MOV прямо с камеры (Log, S-Log3, плоская картинка).&#10;Сжимает бережнее: сохраняет 10 бит и цвет для дальнейшей обработки.">
             <StackPanel Orientation="Horizontal">
               <Path Style="{StaticResource NavIcon}" Data="M1.5,4.5 H9.5 V11.5 H1.5 Z M9.5,7 L14.5,4.5 V11.5 L9.5,9 Z"/>
-              <TextBlock Text="Съёмка с камеры" VerticalAlignment="Center"/>
+              <TextBlock x:Name="LblMode1" Text="Съёмка с камеры" VerticalAlignment="Center"/>
             </StackPanel>
           </RadioButton>
           <RadioButton x:Name="Mode2" GroupName="M" Style="{StaticResource Nav}" IsChecked="True"
                        ToolTip="MP4/MOV: смонтированные ролики, съёмки с телефона, архив.&#10;Максимальная экономия места. Уже компактные файлы пропускаются.">
             <StackPanel Orientation="Horizontal">
               <Path Style="{StaticResource NavIcon}" Data="M1.5,3.5 H14.5 V6.5 H1.5 Z M2.8,6.5 V12.5 H13.2 V6.5 M6.3,9.3 H9.7"/>
-              <TextBlock Text="Обычное видео" VerticalAlignment="Center"/>
+              <TextBlock x:Name="LblMode2" Text="Обычное видео" VerticalAlignment="Center"/>
             </StackPanel>
           </RadioButton>
 
-          <TextBlock Text="КОДЕК" Foreground="{StaticResource Tx3}" FontSize="10.5" Margin="0,17,0,5"/>
+          <TextBlock x:Name="LblSecCodec" Text="КОДЕК" Foreground="{StaticResource Tx3}" FontSize="10.5" Margin="0,17,0,5"/>
           <RadioButton x:Name="Codec0" GroupName="C" Style="{StaticResource Nav}">
             <StackPanel Orientation="Horizontal">
               <Path Style="{StaticResource NavIcon}" Data="M9,1.5 L3.5,8.8 H7.2 L6.4,14.5 L12.5,7.2 H8.8 Z"/>
-              <TextBlock Text="AV1  ·  макс. сжатие" VerticalAlignment="Center"/>
+              <TextBlock x:Name="LblCodec0" Text="AV1" VerticalAlignment="Center"/>
             </StackPanel>
           </RadioButton>
           <RadioButton x:Name="Codec1" GroupName="C" Style="{StaticResource Nav}" IsChecked="True">
             <StackPanel Orientation="Horizontal">
               <Path Style="{StaticResource NavIcon}" Data="M8,1.5 L13.5,3.8 V8 C13.5,11.2 11,13.4 8,14.5 C5,13.4 2.5,11.2 2.5,8 V3.8 Z"/>
-              <TextBlock Text="HEVC  ·  рекомендуется" VerticalAlignment="Center"/>
+              <TextBlock x:Name="LblCodec1" Text="HEVC" VerticalAlignment="Center"/>
             </StackPanel>
           </RadioButton>
           <RadioButton x:Name="Codec2" GroupName="C" Style="{StaticResource Nav}">
             <StackPanel Orientation="Horizontal">
               <Path Style="{StaticResource NavIcon}" Data="M8,1.8 C8,1.8 3.2,7.2 3.2,10 A4.8,4.8 0 0 0 12.8,10 C12.8,7.2 8,1.8 8,1.8 Z"/>
-              <TextBlock Text="DNxHR HQX  ·  грейдинг" VerticalAlignment="Center"/>
+              <TextBlock x:Name="LblCodec2" Text="DNxHR" VerticalAlignment="Center"/>
             </StackPanel>
           </RadioButton>
 
-          <TextBlock Text="ЗВУК" Foreground="{StaticResource Tx3}" FontSize="10.5" Margin="0,17,0,5"/>
+          <TextBlock x:Name="LblSecAudio" Text="ЗВУК" Foreground="{StaticResource Tx3}" FontSize="10.5" Margin="0,17,0,5"/>
           <RadioButton x:Name="Audio0" GroupName="A" Style="{StaticResource Nav}" IsChecked="True">
             <StackPanel Orientation="Horizontal">
               <Path Style="{StaticResource NavIcon}" Data="M2.5,6 V10 M6,2.8 V13.2 M9.5,4.8 V11.2 M13,6.3 V9.7"/>
-              <TextBlock Text="Оригинал  ·  все каналы" VerticalAlignment="Center"/>
+              <TextBlock x:Name="LblAudio0" Text="Оригинал" VerticalAlignment="Center"/>
             </StackPanel>
           </RadioButton>
           <RadioButton x:Name="Audio1" GroupName="A" Style="{StaticResource Nav}">
             <StackPanel Orientation="Horizontal">
               <Path Style="{StaticResource NavIcon}" Data="M2,6.2 H5 L9,3 V13 L5,9.8 H2 Z M11.6,6.2 A3.4,3.4 0 0 1 11.6,9.8"/>
-              <TextBlock Text="AAC стерео  ·  компактно" VerticalAlignment="Center"/>
+              <TextBlock x:Name="LblAudio1" Text="AAC" VerticalAlignment="Center"/>
             </StackPanel>
           </RadioButton>
         </StackPanel>
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="2,0,0,9">
+          <TextBlock x:Name="LnkRu" Text="RU" FontSize="11" Cursor="Hand"/>
+          <TextBlock Text="·" Foreground="{StaticResource Tx3}" FontSize="11" Margin="7,0,7,0"/>
+          <TextBlock x:Name="LnkEn" Text="EN" FontSize="11" Cursor="Hand"/>
+        </StackPanel>
         <CheckBox x:Name="ChkSub" DockPanel.Dock="Bottom" Content="Включая подпапки" Foreground="{StaticResource Tx2}" FontSize="11.5" Margin="2,0,0,2"/>
         <StackPanel x:Name="StatsPanel" DockPanel.Dock="Bottom" Margin="2,0,0,12">
-          <TextBlock Text="ОБЪЁМ" Foreground="{StaticResource Tx3}" FontSize="10.5" Margin="0,0,0,5"/>
+          <TextBlock x:Name="LblSecVolume" Text="ОБЪЁМ" Foreground="{StaticResource Tx3}" FontSize="10.5" Margin="0,0,0,5"/>
           <TextBlock x:Name="LblSrcTotal" Foreground="{StaticResource Tx2}" FontSize="12" Text="—"/>
           <TextBlock x:Name="LblSaved" Foreground="{StaticResource Tx2}" FontSize="12" Margin="0,3,0,0"/>
-          <TextBlock Text="ОСТАЛОСЬ" Foreground="{StaticResource Tx3}" FontSize="10.5" Margin="0,12,0,5"/>
+          <TextBlock x:Name="LblSecLeft" Text="ОСТАЛОСЬ" Foreground="{StaticResource Tx3}" FontSize="10.5" Margin="0,12,0,5"/>
           <TextBlock x:Name="LblEta" Foreground="{StaticResource Tx}" FontSize="13.5" Text="—"/>
         </StackPanel>
         <Grid/>
@@ -755,6 +912,15 @@ $LblTitle  = $Window.FindName('LblTitle')
 $LblCount  = $Window.FindName('LblCount')
 $TxtFolder = $Window.FindName('TxtFolder')
 $LblDevice = $Window.FindName('LblDevice')
+$LblSecMode   = $Window.FindName('LblSecMode')
+$LblSecCodec  = $Window.FindName('LblSecCodec')
+$LblSecAudio  = $Window.FindName('LblSecAudio')
+$LblSecVolume = $Window.FindName('LblSecVolume')
+$LblSecLeft   = $Window.FindName('LblSecLeft')
+$LblMode0 = $Window.FindName('LblMode0'); $LblMode1 = $Window.FindName('LblMode1'); $LblMode2 = $Window.FindName('LblMode2')
+$LblCodec0 = $Window.FindName('LblCodec0'); $LblCodec1 = $Window.FindName('LblCodec1'); $LblCodec2 = $Window.FindName('LblCodec2')
+$LblAudio0 = $Window.FindName('LblAudio0'); $LblAudio1 = $Window.FindName('LblAudio1')
+$LnkRu = $Window.FindName('LnkRu'); $LnkEn = $Window.FindName('LnkEn')
 $ImgLogo   = $Window.FindName('ImgLogo')
 # логотип рейла: та же картинка, что и иконка (кроп плитки из bitshift-source.png),
 # зашита сюда base64 — иначе exe зависел бы от внешнего файла
@@ -859,10 +1025,10 @@ function Refresh-FileList {
       $codec = CurrentCodec
       if ($codec.Compress) {
         $p0 = ProbeVideo $fi.FullName
-        if ($mode.Kind -eq 'cam' -and $p0.Codec -eq 'hevc') { $skip = 'уже HEVC — пропуск' }
+        if ($mode.Kind -eq 'cam' -and $p0.Codec -eq 'hevc') { $skip = (T 'ready_hevc') }
         elseif ($mode.Kind -eq 'arc') {
           $px0 = [double]$p0.W * $p0.H * $p0.Fps
-          if ($px0 -gt 0 -and $p0.Bitrate -gt 0 -and $p0.Bitrate -le $px0 * $ARC_BPP * 1.12) { $skip = 'уже компактный — пропуск' }
+          if ($px0 -gt 0 -and $p0.Bitrate -gt 0 -and $p0.Bitrate -le $px0 * $ARC_BPP * 1.12) { $skip = (T 'ready_compact') }
         }
       }
       if ($skip) {
@@ -872,32 +1038,32 @@ function Refresh-FileList {
       } else {
         $row.Tag = @{ Kind='pair'; Path=$fi.FullName; Out=$out; Locked=$true; Bytes=$fi.Length }
         $row.CanCheck = $false; $row.IsChecked = $true
-        Set-ItemStatus $row 'уже готов — на проверку' $ClrTx2; $nReady++
+        Set-ItemStatus $row (T 'st_ready_pair') $ClrTx2; $nReady++
       }
     } else {
       $key = $out.ToLower()
       if ($seenOuts.ContainsKey($key)) {
         $row.Tag = @{ Kind='collision'; Path=$fi.FullName; Out=$out; Locked=$true; Bytes=$fi.Length }
         $row.CanCheck = $false; $row.IsChecked = $false
-        Set-ItemStatus $row 'коллизия имён — пропущен' $ClrRed
+        Set-ItemStatus $row (T 'st_collision') $ClrRed
       } else {
         $seenOuts[$key] = $true
         $row.Tag = @{ Kind='new'; Path=$fi.FullName; Out=$out; Locked=$false; Bytes=$fi.Length }
         $row.CanCheck = $true; $row.IsChecked = $true
-        Set-ItemStatus $row 'в очереди' $ClrTx2; $nNew++
+        Set-ItemStatus $row (T 'st_queued') $ClrTx2; $nNew++
       }
     }
     $script:Rows.Add($row)
   }
   }
-  $LblTitle.Text = $mode.Name
-  $foldersNote = ''; if ($multi) { $foldersNote = " · папок $($roots.Count)" }
-  $LblCount.Text = "$nTotal файлов$foldersNote · кодек $((CurrentCodec).Key.ToUpper())"
-  $LblStatus.Text = "$nNew новых, $nReady уже готово. Сними галочки с ненужных."
+  $LblTitle.Text = T $mode.NameKey
+  $foldersNote = ''; if ($multi) { $foldersNote = ((T 'folders_note') -f $roots.Count) }
+  $LblCount.Text = ((T 'count_line') -f $nTotal, $foldersNote, (CurrentCodec).Key.ToUpper())
+  $LblStatus.Text = ((T 'list_summary') -f $nNew, $nReady)
   # объём выбранного + фоновый прогноз результата (считается по таймеру, не блокируя UI)
   $sel = [long]0
   foreach ($r in $script:Rows) { if ($r.Tag -and $r.Tag.Kind -eq 'new' -and $r.IsChecked) { $sel += [long]$r.Tag.Bytes } }
-  if ($sel -gt 0) { $LblSrcTotal.Text = 'К обработке: ' + (HumanSize $sel) } else { $LblSrcTotal.Text = '—' }
+  if ($sel -gt 0) { $LblSrcTotal.Text = (T 'lbl_to_process') + (HumanSize $sel) } else { $LblSrcTotal.Text = '—' }
   $LblSaved.Text = ''; $LblSaved.Foreground = $ClrTx2
   $LblEta.Text = '—'
   $script:EstBusy = $true
@@ -911,15 +1077,53 @@ function Set-Roots([string[]]$dirs) {
   $script:BaseDir = $d[0]          # первый корень — «основной» (кэш, тест-хуки)
   Update-FolderBox
 }
+# проставляет все надписи интерфейса на текущем языке и подсвечивает выбранный
+function Apply-Language {
+  $LblSecMode.Text   = T 'sec_mode'
+  $LblSecCodec.Text  = T 'sec_codec'
+  $LblSecAudio.Text  = T 'sec_audio'
+  $LblSecVolume.Text = T 'sec_volume'
+  $LblSecLeft.Text   = T 'sec_left'
+  $LblMode0.Text = T 'mode_old';  $LblMode1.Text = T 'mode_cam';  $LblMode2.Text = T 'mode_arc'
+  $script:ModeBtns[0].ToolTip = T 'mode_old_tip'
+  $script:ModeBtns[1].ToolTip = T 'mode_cam_tip'
+  $script:ModeBtns[2].ToolTip = T 'mode_arc_tip'
+  $LblCodec0.Text = T 'codec_av1'; $LblCodec1.Text = T 'codec_hevc'; $LblCodec2.Text = T 'codec_dnxhr'
+  $LblAudio0.Text = T 'audio_orig'; $LblAudio1.Text = T 'audio_aac'
+  $BtnBrowse.Content  = T 'btn_browse'
+  $BtnRefresh.Content = T 'btn_refresh'
+  $BtnStart.Content   = T 'btn_start'
+  $BtnStop.Content    = T 'btn_stop'
+  if ($script:Paused) { $BtnPause.Content = T 'btn_resume' } else { $BtnPause.Content = T 'btn_pause' }
+  $ChkSub.Content      = T 'chk_sub'
+  $ChkShutdown.Content = T 'chk_shutdown'
+  $ChkAuto.Content     = T 'chk_auto'
+  if ($script:GoodSrc.Count -gt 0) { $BtnDelete.Content = ((T 'btn_delete_n') -f $script:GoodSrc.Count) }
+  else { $BtnDelete.Content = T 'btn_delete' }
+  if ($script:Lang -eq 'ru') { $LnkRu.Foreground = $ClrTx; $LnkEn.Foreground = $ClrTx2 }
+  else                       { $LnkRu.Foreground = $ClrTx2; $LnkEn.Foreground = $ClrTx }
+  Update-DeviceLabel
+  # обновляем то, что уже нарисовано: список пересобираем только в покое
+  if ($script:Phase -in @('idle','done')) { Refresh-FileList } else { Update-Progress }
+}
+function Set-Lang([string]$l) {
+  if ($l -ne 'ru' -and $l -ne 'en') { return }
+  if ($script:Lang -eq $l) { return }
+  $script:Lang = $l
+  Apply-Culture
+  Save-Lang
+  Apply-Language
+  Log "язык интерфейса: $l"
+}
 # чем кодируем при текущем кодеке: NVENC или процессор (DNxHR всегда на CPU)
 function Update-DeviceLabel {
   $c = CurrentCodec
   if ($c.Gpu -and $script:HasNvenc) {
     $LblDevice.Text = "NVENC · $($script:GpuName)"
-    $LblDevice.ToolTip = "Кодирует видеокарта $($script:GpuName) (NVENC)"
+    $LblDevice.ToolTip = ((T 'dev_gpu_tip') -f $script:GpuName)
   } else {
-    $LblDevice.Text = 'Кодирует процессор'
-    $LblDevice.ToolTip = "$($c.Key.ToUpper()) кодируется процессором — видеокарта этот кодек не умеет"
+    $LblDevice.Text = (T 'dev_cpu')
+    $LblDevice.ToolTip = ((T 'dev_cpu_tip') -f $c.Key.ToUpper())
   }
 }
 # подпись выбранной папки в рейле: короткое имя, полный путь — в подсказке
@@ -927,7 +1131,7 @@ function Update-FolderBox {
   $d = @($script:BaseDirs | Where-Object { $_ })
   if ($d.Count -eq 0) { $d = @($script:BaseDir) }
   if ($d.Count -gt 1) {
-    $TxtFolder.Text = ("Папок: {0} — {1}" -f $d.Count, (($d | ForEach-Object { Split-Path $_ -Leaf }) -join ', '))
+    $TxtFolder.Text = ((T 'folders_multi') -f $d.Count, (($d | ForEach-Object { Split-Path $_ -Leaf }) -join ', '))
     $TxtFolder.ToolTip = ($d -join "`n")
     return
   }
@@ -995,20 +1199,20 @@ function Step-Estimate {
       if ($e -lt 0) { $noEst = $true } else { $est += $e; $known++ }
     }
   }
-  if ($sel -gt 0) { $LblSrcTotal.Text = 'К обработке: ' + (HumanSize $sel) } else { $LblSrcTotal.Text = '—' }
+  if ($sel -gt 0) { $LblSrcTotal.Text = (T 'lbl_to_process') + (HumanSize $sel) } else { $LblSrcTotal.Text = '—' }
   $left = @($todo).Count - $n
   if ($cnt -eq 0) { $LblSaved.Text = ''; $script:EstBusy = $false; return }
-  if ($noEst -and $known -eq 0) { $LblSaved.Text = 'Прогноз: недоступен'; $LblSaved.Foreground = $ClrTx2; $script:EstBusy = $false; return }
+  if ($noEst -and $known -eq 0) { $LblSaved.Text = (T 'lbl_forecast_na'); $LblSaved.Foreground = $ClrTx2; $script:EstBusy = $false; return }
   if ($left -gt 0) {
-    $LblSaved.Text = ("Прогноз: считаю… {0}/{1}" -f $known, $cnt); $LblSaved.Foreground = $ClrTx2
+    $LblSaved.Text = ((T 'lbl_forecast_calc') -f $known, $cnt); $LblSaved.Foreground = $ClrTx2
     $script:EstBusy = $true; return
   }
   $script:EstBusy = $false
-  if ($known -eq 0) { $LblSaved.Text = 'Прогноз: недоступен'; $LblSaved.Foreground = $ClrTx2; return }
+  if ($known -eq 0) { $LblSaved.Text = (T 'lbl_forecast_na'); $LblSaved.Foreground = $ClrTx2; return }
   # экстраполируем на файлы без оценки, чтобы цифра не была занижена
   $full = $est; if ($known -lt $cnt -and $known -gt 0) { $full = [long]($est * $cnt / $known) }
   $pct = 0; if ($sel -gt 0) { $pct = [int](100 - $full * 100.0 / $sel) }
-  $LblSaved.Text = ("Прогноз: ~{0} · −{1}%" -f (HumanSize $full), $pct)
+  $LblSaved.Text = ((T 'lbl_forecast') -f (HumanSize $full), $pct)
   $LblSaved.Foreground = $ClrGreen
 }
 
@@ -1049,18 +1253,18 @@ function Start-Run {
       $script:Queue.Enqueue(@{ Path=$t.Path; Out=$t.Out; Item=$row })
       $script:TotalSrcBytes += [long]$t.Bytes
     } elseif ($t.Kind -eq 'new') {
-      Set-ItemStatus $row 'снята галочка — пропущен' $ClrGray
+      Set-ItemStatus $row (T 'st_unchecked') $ClrGray
     }
   }
   $script:Counts.EncTotal = $script:Queue.Count
   $script:Counts.DefTotal = $script:DeferredPairs.Count
   if ($script:Queue.Count -eq 0 -and $script:DeferredPairs.Count -eq 0) {
-    [System.Windows.MessageBox]::Show('Нет ни выбранных файлов, ни готовых пар для проверки.', 'BitShift') | Out-Null; return
+    [System.Windows.MessageBox]::Show((T 'dlg_nofiles'), 'BitShift') | Out-Null; return
   }
-  Log "WPF-старт: режим «$($mode.Name)», папки [$((CurrentRoots) -join '; ')], файлов $($script:Queue.Count), пар $($script:DeferredPairs.Count)"
+  Log "WPF-старт: режим «$($script:Str.ru[$mode.NameKey])», папки [$((CurrentRoots) -join '; ')], файлов $($script:Queue.Count), пар $($script:DeferredPairs.Count)"
   Set-ControlsEnabled $false
   $BtnStart.IsEnabled = $false; $BtnStop.IsEnabled = $true; $BtnDelete.IsEnabled = $false
-  $BtnPause.IsEnabled = $true; $BtnPause.Content = 'Пауза'
+  $BtnPause.IsEnabled = $true; $BtnPause.Content = (T 'btn_pause')
   Set-Bar 0
   KeepAwake $true
   $script:Phase = 'run'
@@ -1068,7 +1272,7 @@ function Start-Run {
 
 function Prep-Item($t) {
   $mode = $script:RunMode; $codec = $script:RunCodec
-  if (-not (Test-Path -LiteralPath $t.Path)) { $script:Counts.Skip++; Set-ItemStatus $t.Item 'файл исчез' $ClrRed; return $null }
+  if (-not (Test-Path -LiteralPath $t.Path)) { $script:Counts.Skip++; Set-ItemStatus $t.Item (T 'st_gone') $ClrRed; return $null }
   $fi = Get-Item -LiteralPath $t.Path
   $p = ProbeVideo $fi.FullName
   $t.Item.Info = ('{0} {1}x{2} {3:0.##}fps {4}' -f $p.Codec, $p.W, $p.H, $p.Fps, $p.PixFmt)
@@ -1077,15 +1281,15 @@ function Prep-Item($t) {
     $t.TryHw = $false; $t.Probe = $p; $t.Target = 0; $t.ACodec = $ai.Codec; $t.AChans = $ai.Chans; $t.Size = $fi.Length; $t.Name = $fi.Name
     return $t
   }
-  if ($mode.Kind -eq 'cam' -and $p.Codec -eq 'hevc') { $script:Counts.Skip++; Set-ItemStatus $t.Item 'пропуск: уже HEVC' $ClrGray; Log "пропуск (уже HEVC): $($fi.Name)"; return $null }
+  if ($mode.Kind -eq 'cam' -and $p.Codec -eq 'hevc') { $script:Counts.Skip++; Set-ItemStatus $t.Item (T 'skip_hevc') $ClrGray; Log "пропуск (уже HEVC): $($fi.Name)"; return $null }
   $px = [double]$p.W * $p.H * $p.Fps
-  if ($mode.Kind -eq 'arc' -and $px -gt 0 -and $p.Bitrate -le $px * $ARC_BPP * 1.12) { $script:Counts.Skip++; Set-ItemStatus $t.Item 'пропуск: уже компактный' $ClrGray; Log "пропуск (компактный): $($fi.Name)"; return $null }
+  if ($mode.Kind -eq 'arc' -and $px -gt 0 -and $p.Bitrate -le $px * $ARC_BPP * 1.12) { $script:Counts.Skip++; Set-ItemStatus $t.Item (T 'skip_compact') $ClrGray; Log "пропуск (компактный): $($fi.Name)"; return $null }
   $target = [double]$p.Bitrate * $mode.Ratio / 100.0
   if ($px -gt 0) { $lo = $px * $mode.BppMin; $hi = $px * $mode.BppMax; if ($target -lt $lo) { $target = $lo }; if ($target -gt $hi) { $target = $hi } }
   if ($target -lt $mode.Floor) { $target = $mode.Floor }
   if ($target -lt 500000) { $target = 500000 }
   $target = [long]$target
-  if ($target -ge $p.Bitrate * 0.9) { $script:Counts.Skip++; Set-ItemStatus $t.Item 'пропуск: выигрыш < 10%' $ClrGray; Log "пропуск (<10%): $($fi.Name)"; return $null }
+  if ($target -ge $p.Bitrate * 0.9) { $script:Counts.Skip++; Set-ItemStatus $t.Item (T 'skip_gain') $ClrGray; Log "пропуск (<10%): $($fi.Name)"; return $null }
   $t.TryHw = $true
   if ($p.Codec -eq 'h264' -and $p.PixFmt -ne 'yuv420p' -and $p.PixFmt -ne 'yuvj420p') { $t.TryHw = $false }
   $ai = AudioInfo $fi.FullName
@@ -1103,7 +1307,7 @@ function Start-EncodeItem($t) {
     ErrFile=(Join-Path $script:TMP ([IO.Path]::GetRandomFileName() + '.err'))
     Proc=$null; UsedHw=$true; Item=$t.Item; Pct=0; AudioForce=''
   }
-  Set-ItemStatus $t.Item ('кодирую… ({0} -> {1} кбит/с)' -f [long]($t.Probe.Bitrate/1000), [long]($t.Target/1000)) $ClrBlue
+  Set-ItemStatus $t.Item ((T 'st_encoding_start') -f [long]($t.Probe.Bitrate/1000), [long]($t.Target/1000)) $ClrBlue
   Log ("кодирую: {0} (hw={1}, ssd={2})" -f $t.Name, $t.TryHw, [bool]$t.Staged)
   StartEncode $item $t.TryHw
   [void]$script:Active.Add($item)
@@ -1138,8 +1342,8 @@ function Step-Encode {
   if ($script:UseStage) {
     if ($script:CopyProc -and $script:CopyProc.HasExited) {
       $ec = $script:CopyProc.ExitCode
-      if ($ec -lt 8 -and (Test-Path -LiteralPath $script:CopyT.Staged)) { Set-ItemStatus $script:CopyT.Item 'на SSD, жду слот кодирования' $null; $script:Ready.Enqueue($script:CopyT) }
-      else { $script:Counts.Err++; Set-ItemStatus $script:CopyT.Item "ошибка копирования на SSD (robocopy $ec)" $ClrRed; Log "ошибка robocopy ($ec): $($script:CopyT.Path)" }
+      if ($ec -lt 8 -and (Test-Path -LiteralPath $script:CopyT.Staged)) { Set-ItemStatus $script:CopyT.Item (T 'st_on_ssd') $null; $script:Ready.Enqueue($script:CopyT) }
+      else { $script:Counts.Err++; Set-ItemStatus $script:CopyT.Item ((T 'st_copy_fail') -f $ec) $ClrRed; Log "ошибка robocopy ($ec): $($script:CopyT.Path)" }
       $script:CopyProc = $null; $script:CopyT = $null
     }
     # живой прогресс копирования на SSD — по размеру растущего файла
@@ -1152,18 +1356,18 @@ function Step-Encode {
         # файл уже на быстром диске (внутренний SSD) — копировать никуда не надо,
         # кодируем прямо на месте. Кэш нужен только для медленных USB-источников.
         if (-not (IsSlowPath $t.Path)) {
-          $t.Staged = ''; Set-ItemStatus $t.Item 'на быстром диске — кодирую на месте' $null
+          $t.Staged = ''; Set-ItemStatus $t.Item (T 'st_fast_disk') $null
           $script:Ready.Enqueue($t); continue
         }
         $free = 0; try { $free = (Get-PSDrive -Name $script:TMP.Substring(0,1)).Free } catch {}
-        if ($free -lt ($t.Size * 1.5 + 10GB)) { $t.Staged = ''; Set-ItemStatus $t.Item 'мало места на SSD — кодирую напрямую' $null; $script:Ready.Enqueue($t); continue }
+        if ($free -lt ($t.Size * 1.5 + 10GB)) { $t.Staged = ''; Set-ItemStatus $t.Item (T 'st_low_space') $null; $script:Ready.Enqueue($t); continue }
         # уникальная подпапка на каждый файл: в дереве бывают одинаковые basename в
         # разных папках (камера сбрасывает нумерацию), а плоский %TEMP% их сталкивал —
         # два ffmpeg писали в один C0008_v2.mp4 → гонки, «файла нет», сбои переноса
         $t.StageDir = Join-Path $script:TMP ([IO.Path]::GetRandomFileName())
         New-Item -ItemType Directory -Path $t.StageDir -Force | Out-Null
         $t.Staged = Join-Path $t.StageDir $t.Name
-        Set-ItemStatus $t.Item 'копирую на SSD…' $ClrBlue
+        Set-ItemStatus $t.Item (T 'st_copying') $ClrBlue
         $script:CopyProc = StartRobocopy (Split-Path $t.Path -Parent) $t.StageDir $t.Name $false; $script:CopyT = $t; break
       }
     }
@@ -1179,7 +1383,7 @@ function Step-Encode {
       $pp = ProgPct $item.ProgFile $item.Probe.Dur
       if ($pp -ge 0) {
         $pc = [int]$pp
-        Set-ItemStatus $item.Item ("кодирую {0}%" -f $pc) $ClrBlue; $item.Pct = $pc
+        Set-ItemStatus $item.Item ((T 'st_encoding') -f $pc) $ClrBlue; $item.Pct = $pc
         Set-RowBar $item.Item $pp $ClrBlue
       }
       continue
@@ -1187,7 +1391,7 @@ function Step-Encode {
     $code = $item.Proc.ExitCode
     if ($code -ne 0 -and $item.UsedHw) {
       Remove-Item -LiteralPath $item.Out -ErrorAction SilentlyContinue
-      Set-ItemStatus $item.Item 'hw-декодер не справился — повтор на CPU' $ClrBlue; Log "повтор на CPU: $($item.Name)"
+      Set-ItemStatus $item.Item (T 'st_hw_retry') $ClrBlue; Log "повтор на CPU: $($item.Name)"
       StartEncode $item $false; continue
     }
     # экзотический звук может не лечь в контейнер результата — тогда один раз
@@ -1195,7 +1399,7 @@ function Step-Encode {
     if ($code -ne 0 -and -not $item.AudioForce -and (AudioArgs $item) -like '*copy*') {
       Remove-Item -LiteralPath $item.Out -ErrorAction SilentlyContinue
       $item.AudioForce = 'aac'
-      Set-ItemStatus $item.Item 'звук не скопировался — повтор с AAC' $ClrBlue; Log "повтор с AAC-звуком: $($item.Name)"
+      Set-ItemStatus $item.Item (T 'st_audio_retry') $ClrBlue; Log "повтор с AAC-звуком: $($item.Name)"
       StartEncode $item $item.UsedHw; continue
     }
     [void]$script:Active.Remove($item)
@@ -1207,7 +1411,7 @@ function Step-Encode {
       # инфо о финальном файле: кодек · размер · сжатие (остаётся видимым и после проверки)
       $item.Item.Info = ('→ {0} · {1}{2}' -f $item.Codec.OutCodec, (HumanSize $dsz), $saved)
       $script:Counts.Ok++
-      Set-ItemStatus $item.Item 'готово' $ClrGreen; Set-RowBar $item.Item 100 $ClrGreen
+      Set-ItemStatus $item.Item (T 'st_done') $ClrGreen; Set-RowBar $item.Item 100 $ClrGreen
       $vsrc = $item.OrigSrc; if ($item.StagedSrc) { $vsrc = $item.StagedSrc }
       $script:VQueue.Enqueue(@{ Src=$item.OrigSrc; SrcRead=$vsrc; Out=$item.Out; FinalOut=$item.FinalOut; StagedSrc=$item.StagedSrc; ExpectCodec=$item.Codec.OutCodec; Item=$item.Item })
       $script:Counts.VTotal++
@@ -1217,7 +1421,7 @@ function Step-Encode {
       if ($item.StagedSrc) { Remove-Item -LiteralPath $item.StagedSrc -Force -ErrorAction SilentlyContinue }
       $script:Counts.Err++
       $err = ErrSummary $item.ErrFile
-      Set-ItemStatus $item.Item ('ОШИБКА: ' + $err) $ClrRed; Set-RowBar $item.Item -1 $null; Log "ОШИБКА: $($item.Name) $err"
+      Set-ItemStatus $item.Item ((T 'st_error') + $err) $ClrRed; Set-RowBar $item.Item -1 $null; Log "ОШИБКА: $($item.Name) $err"
     }
   }
 }
@@ -1235,7 +1439,7 @@ function VerifyBad($t, [string]$why) {
   }
   if ($t.StagedSrc) { Remove-Item -LiteralPath $t.StagedSrc -Force -ErrorAction SilentlyContinue }
   if ($t.Out -ne $t.FinalOut) { Remove-Item -LiteralPath $t.Out -Force -ErrorAction SilentlyContinue }
-  Set-ItemStatus $t.Item ("ПРОВАЛ проверки: $why — оригинал оставлен") $ClrRed
+  Set-ItemStatus $t.Item ((T 'st_fail') -f $why) $ClrRed
   Log "проверка $(Split-Path $t.Out -Leaf): ПРОВАЛ ($why)"
 }
 
@@ -1245,17 +1449,17 @@ function Step-Verify {
     $t = $script:VQueue.Dequeue()
     Set-ItemStatus $t.Item 'проверяю…' $ClrBlue
     $bad = ''
-    if (-not (Test-Path -LiteralPath $t.Out) -or (Get-Item -LiteralPath $t.Out).Length -eq 0) { $bad = 'файла нет' }
+    if (-not (Test-Path -LiteralPath $t.Out) -or (Get-Item -LiteralPath $t.Out).Length -eq 0) { $bad = (T 'bad_nofile') }
     if (-not $bad) {
       $dp = ProbeVideo $t.Out; $sp = ProbeVideo $t.SrcRead
       $okCodec = if ($t.ExpectCodec) { $dp.Codec -eq $t.ExpectCodec } else { @('hevc','av1','dnxhd') -contains $dp.Codec }
-      if (-not $okCodec) { $bad = "результат не тот кодек ($($dp.Codec))" }
-      elseif ($sp.Dur -le 0 -or $dp.Dur -le 0) { $bad = 'нет длительности' }
-      else { $tol = [math]::Max($sp.Dur * 0.02, 2.0); if ([math]::Abs($sp.Dur - $dp.Dur) -gt $tol) { $bad = 'длительность не совпала' } }
+      if (-not $okCodec) { $bad = ((T 'bad_codec') -f $dp.Codec) }
+      elseif ($sp.Dur -le 0 -or $dp.Dur -le 0) { $bad = (T 'bad_noduration') }
+      else { $tol = [math]::Max($sp.Dur * 0.02, 2.0); if ([math]::Abs($sp.Dur - $dp.Dur) -gt $tol) { $bad = (T 'bad_duration') } }
     }
     if (-not $bad -and $t.Src -match '\.(mp4|mov)$') {
       $p1 = PacketCount $t.SrcRead; $p2 = PacketCount $t.Out
-      if ($p1 -ge 0 -and $p2 -ge 0 -and [math]::Abs($p1 - $p2) -gt 2) { $bad = "кадры: $p1 vs $p2" }
+      if ($p1 -ge 0 -and $p2 -ge 0 -and [math]::Abs($p1 - $p2) -gt 2) { $bad = ((T 'bad_frames') -f $p1, $p2) }
     }
     if ($bad) { VerifyBad $t $bad; continue }
     $t.ErrFile = Join-Path $script:TMP ([IO.Path]::GetRandomFileName() + '.verr')
@@ -1271,7 +1475,7 @@ function Step-Verify {
   foreach ($t in @($script:VActive)) {
     if (-not $t.Proc.HasExited) {
       $vp = ProgPct $t.VProg $t.Dur
-      if ($vp -ge 0) { Set-ItemStatus $t.Item ("проверяю {0}%" -f [int]$vp) $ClrViolet; Set-RowBar $t.Item $vp $ClrViolet }
+      if ($vp -ge 0) { Set-ItemStatus $t.Item ((T 'st_verifying') -f [int]$vp) $ClrViolet; Set-RowBar $t.Item $vp $ClrViolet }
       continue
     }
     $hadErrors = $false; try { $hadErrors = ((Get-Item -LiteralPath $t.ErrFile -ErrorAction SilentlyContinue).Length -gt 0) } catch {}
@@ -1287,10 +1491,10 @@ function Step-Verify {
     if ($t.Proc.ExitCode -eq 0 -and -not $hadErrors) {
       $script:Counts.VGood++
       if ($t.StagedSrc) { Remove-Item -LiteralPath $t.StagedSrc -Force -ErrorAction SilentlyContinue }
-      if ($t.Out -ne $t.FinalOut) { Set-ItemStatus $t.Item 'проверен — жду переноса с SSD' $ClrBlue; Set-RowBar $t.Item 0 $ClrTx2; $script:MoveQueue.Enqueue($t) }
-      else { $script:GoodSrc += @{ Src=$t.Src; Item=$t.Item }; Set-ItemStatus $t.Item 'проверен — оригинал можно удалять' $ClrGreen; Set-RowBar $t.Item 100 $ClrGreen }
+      if ($t.Out -ne $t.FinalOut) { Set-ItemStatus $t.Item (T 'st_verified_wait_move') $ClrBlue; Set-RowBar $t.Item 0 $ClrTx2; $script:MoveQueue.Enqueue($t) }
+      else { $script:GoodSrc += @{ Src=$t.Src; Item=$t.Item }; Set-ItemStatus $t.Item (T 'st_verified') $ClrGreen; Set-RowBar $t.Item 100 $ClrGreen }
       Log "проверка $(Split-Path $t.Out -Leaf): ок"
-    } else { VerifyBad $t 'ошибки декодирования' }
+    } else { VerifyBad $t (T 'bad_decode') }
   }
 }
 
@@ -1307,13 +1511,13 @@ function Step-Move {
     if ($ec -lt 8 -and (Test-Path -LiteralPath $t.FinalOut)) {
       try { $si = Get-Item -LiteralPath $t.Src; $di = Get-Item -LiteralPath $t.FinalOut; $di.CreationTime = $si.CreationTime; $di.LastWriteTime = $si.LastWriteTime } catch {}
       $script:GoodSrc += @{ Src=$t.Src; Item=$t.Item }
-      Set-ItemStatus $t.Item 'готово, проверен — оригинал можно удалять' $ClrGreen; Set-RowBar $t.Item 100 $ClrGreen
+      Set-ItemStatus $t.Item (T 'st_verified_moved') $ClrGreen; Set-RowBar $t.Item 100 $ClrGreen
       Log "перенесён: $(Split-Path $t.FinalOut -Leaf)"
-    } else { Set-ItemStatus $t.Item "НЕ смог перенести результат с SSD (robocopy $ec)" $ClrRed; Set-RowBar $t.Item -1 $null; Log "ошибка переноса ($ec): $($t.FinalOut)" }
+    } else { Set-ItemStatus $t.Item ((T 'st_move_fail') -f $ec) $ClrRed; Set-RowBar $t.Item -1 $null; Log "ошибка переноса ($ec): $($t.FinalOut)" }
   }
   if (-not $script:MoveProc -and $script:MoveQueue.Count -gt 0) {
     $t = $script:MoveQueue.Dequeue()
-    Set-ItemStatus $t.Item 'переношу результат…' $ClrBlue
+    Set-ItemStatus $t.Item (T 'st_moving') $ClrBlue
     $t.OutLen = 0; try { $t.OutLen = (Get-Item -LiteralPath $t.Out).Length } catch {}
     Set-RowBar $t.Item 0 $ClrTx2
     $script:MoveProc = StartRobocopy (Split-Path $t.Out -Parent) (Split-Path $t.FinalOut -Parent) (Split-Path $t.Out -Leaf) $true
@@ -1327,15 +1531,15 @@ function Finish-Run([bool]$natural = $true) {
   $script:Phase = 'done'; KeepAwake $false
   Set-ControlsEnabled $true
   $BtnStart.IsEnabled = $true; $BtnStop.IsEnabled = $false
-  $script:Paused = $false; $BtnPause.IsEnabled = $false; $BtnPause.Content = 'Пауза'
+  $script:Paused = $false; $BtnPause.IsEnabled = $false; $BtnPause.Content = (T 'btn_pause')
   Set-Bar 1
   Update-Stats
   Update-Eta
   $c = $script:Counts
-  $LblStatus.Text = "Готово. Сконвертировано $($c.Ok), пропущено $($c.Skip), ошибок $($c.Err). Проверено целых $($c.VGood) из $($c.VTotal)."
+  $LblStatus.Text = ((T 'finish') -f $c.Ok, $c.Skip, $c.Err, $c.VGood, $c.VTotal)
   Log "WPF-конец: ok=$($c.Ok) skip=$($c.Skip) err=$($c.Err) vgood=$($c.VGood) vbad=$($c.VBad)"
   if ($script:GoodSrc.Count -gt 0) {
-    $BtnDelete.Content = "Удалить $($script:GoodSrc.Count) проверенных в Корзину…"; $BtnDelete.IsEnabled = $true
+    $BtnDelete.Content = ((T 'btn_delete_n') -f $script:GoodSrc.Count); $BtnDelete.IsEnabled = $true
     # автоудаление (если включена галочка): в Корзину идут только проверенные,
     # провалившие проверку исходники не трогаются (они не попали в GoodSrc)
     if ($ChkAuto.IsChecked -eq $true) { Log 'автоудаление включено'; Recycle-Good 'авто' }
@@ -1344,10 +1548,10 @@ function Finish-Run([bool]$natural = $true) {
   # и никогда в тест-режиме
   if ($natural -and $ChkShutdown.IsChecked -eq $true -and $env:HEVC_WPF_TEST -ne '1') {
     $secs = 120
-    $LblStatus.Text = "$($LblStatus.Text)  •  Компьютер выключится через $secs с. Отмена: shutdown /a"
+    $LblStatus.Text = "$($LblStatus.Text)  •  " + ((T 'shutdown_note') -f $secs)
     Log "автовыключение ПК: shutdown через $secs с"
     try {
-      Start-Process -FilePath 'shutdown' -ArgumentList ('/s /t ' + $secs + ' /c "Конвертация завершена — выключение"') -WindowStyle Hidden
+      Start-Process -FilePath 'shutdown' -ArgumentList ('/s /t ' + $secs + ' /c "' + (T 'shutdown_reason') + '"') -WindowStyle Hidden
     } catch { Log "не смог запустить shutdown: $_" }
   }
 }
@@ -1361,7 +1565,7 @@ function Stop-Run {
     try { if ($item.Proc -and -not $item.Proc.HasExited) { $item.Proc.Kill() } } catch {}
     Remove-Item -LiteralPath $item.Out -ErrorAction SilentlyContinue
     if ($item.StagedSrc) { Remove-Item -LiteralPath $item.StagedSrc -Force -ErrorAction SilentlyContinue }
-    Set-ItemStatus $item.Item 'остановлено' $ClrGray
+    Set-ItemStatus $item.Item (T 'st_stopped') $ClrGray
   }
   $script:Active.Clear()
   foreach ($t in $script:VActive) { try { if ($t.Proc -and -not $t.Proc.HasExited) { $t.Proc.Kill() } } catch {} }
@@ -1374,7 +1578,7 @@ function Stop-Run {
   $script:DeferredPairs = @(); $script:DeferredFlushed = $true
   Log 'WPF: остановлено пользователем'
   Finish-Run $false
-  $LblStatus.Text = 'Остановлено. Готовые пары можно проверить, нажав Старт ещё раз.'
+  $LblStatus.Text = (T 'stopped_hint')
 }
 
 # пауза/продолжение кодирования: приостанавливаем сами процессы ffmpeg (NVENC замирает),
@@ -1384,10 +1588,10 @@ function Toggle-Pause {
   $script:Paused = -not $script:Paused
   if ($script:Paused) {
     foreach ($item in $script:Active) { try { if ($item.Proc -and -not $item.Proc.HasExited) { [HevcWpf.ProcCtl]::NtSuspendProcess($item.Proc.Handle) | Out-Null } } catch {} }
-    $BtnPause.Content = 'Продолжить'; Log 'пауза: кодирование приостановлено'
+    $BtnPause.Content = (T 'btn_resume'); Log 'пауза: кодирование приостановлено'
   } else {
     foreach ($item in $script:Active) { try { if ($item.Proc -and -not $item.Proc.HasExited) { [HevcWpf.ProcCtl]::NtResumeProcess($item.Proc.Handle) | Out-Null } } catch {} }
-    $BtnPause.Content = 'Пауза'; Log 'пауза снята — продолжаю'
+    $BtnPause.Content = (T 'btn_pause'); Log 'пауза снята — продолжаю'
   }
 }
 
@@ -1400,16 +1604,16 @@ function Recycle-Good([string]$how) {
   foreach ($g in $script:GoodSrc) {
     try {
       [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile($g.Src, [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs, [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin)
-      $trashed++; Set-ItemStatus $g.Item 'оригинал в Корзине' $ClrGreen; Log "в корзину ($how): $(Split-Path $g.Src -Leaf)"
-    } catch { $failed++; Set-ItemStatus $g.Item 'НЕ удалился' $ClrRed; Log "НЕ удалился: $(Split-Path $g.Src -Leaf)" }
+      $trashed++; Set-ItemStatus $g.Item (T 'st_in_trash') $ClrGreen; Log "в корзину ($how): $(Split-Path $g.Src -Leaf)"
+    } catch { $failed++; Set-ItemStatus $g.Item (T 'st_not_deleted') $ClrRed; Log "НЕ удалился: $(Split-Path $g.Src -Leaf)" }
   }
   $script:GoodSrc = @(); $BtnDelete.IsEnabled = $false
-  $LblStatus.Text = "В Корзину: $trashed, проблем: $failed."; Log "удаление ($how): $trashed в корзину, $failed проблем"
+  $LblStatus.Text = ((T 'trash_result') -f $trashed, $failed); Log "удаление ($how): $trashed в корзину, $failed проблем"
 }
 # ручное удаление — с подтверждением
 function Delete-Originals {
   $n = $script:GoodSrc.Count; if ($n -eq 0) { return }
-  $r = [System.Windows.MessageBox]::Show("Проверка пройдена: $n файлов.`n`nУдалить $n проверенных оригиналов в Корзину?`nИз Корзины всё можно вернуть.", 'BitShift', [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+  $r = [System.Windows.MessageBox]::Show(((T 'dlg_confirm') -f $n), 'BitShift', [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
   if ($r -ne [System.Windows.MessageBoxResult]::Yes) { Log 'удаление: отказ'; return }
   Recycle-Good 'вручную'
 }
@@ -1431,13 +1635,13 @@ function Overall-Fraction {
   return @{ Pct=[int]($units * 100.0 / $total); Units=$units; Total=$total }
 }
 function HumanTime([double]$sec) {
-  if ($sec -lt 45) { return 'меньше минуты' }
+  if ($sec -lt 45) { return (T 't_lessmin') }
   $m = [int][math]::Round($sec / 60.0)
-  if ($m -lt 60) { return "~$m мин" }
+  if ($m -lt 60) { return ((T 't_min') -f $m) }
   $h = [int][math]::Floor($m / 60); $mm = $m % 60
-  if ($h -lt 24) { if ($mm -eq 0) { return "~$h ч" } else { return "~$h ч $mm мин" } }
+  if ($h -lt 24) { if ($mm -eq 0) { return ((T 't_hour') -f $h) } else { return ((T 't_hourmin') -f $h, $mm) } }
   $d = [int][math]::Floor($h / 24); $hh = $h % 24
-  return "~$d дн $hh ч"
+  return ((T 't_day') -f $d, $hh)
 }
 # Оценка по БАЙТАМ, а не по числу файлов: у него в архиве и 100 МБ, и 9 ГБ в одной
 # папке, счёт по штукам врал бы в разы. Замеряем фактическую пропускную способность
@@ -1450,9 +1654,9 @@ function Update-Eta {
   $doneB = [double]$script:DoneSrcBytes
   foreach ($it in $script:Active) { if ($it.SrcSize -gt 0) { $doneB += [double]$it.SrcSize * ([double]$it.Pct / 100.0) } }
   $elapsed = ((Get-Date) - $script:RunStart).TotalSeconds
-  if ($elapsed -lt 20 -or $doneB -le 0) { $LblEta.Text = 'считаю…'; return }
+  if ($elapsed -lt 20 -or $doneB -le 0) { $LblEta.Text = (T 't_calc'); return }
   $frac = $doneB / [double]$script:TotalSrcBytes
-  if ($frac -ge 0.999) { $LblEta.Text = 'завершаем…'; return }
+  if ($frac -ge 0.999) { $LblEta.Text = (T 't_finishing'); return }
   $rem = $elapsed * (1.0 - $frac) / $frac
   # хвост: файлы, которые уже закодированы, но ещё ждут проверки/переноса
   $tail = $script:VQueue.Count + $script:VActive.Count + $script:MoveQueue.Count
@@ -1461,13 +1665,13 @@ function Update-Eta {
   $LblEta.Text = HumanTime $script:EtaSmooth
 }
 function Update-Stats {
-  if ($script:TotalSrcBytes -gt 0) { $LblSrcTotal.Text = 'Объём исходников: ' + (HumanSize $script:TotalSrcBytes) }
+  if ($script:TotalSrcBytes -gt 0) { $LblSrcTotal.Text = (T 'lbl_src_total') + (HumanSize $script:TotalSrcBytes) }
   else { $LblSrcTotal.Text = '—' }
   if ($script:DoneSrcBytes -gt 0 -and $script:SavedBytes -gt 0) {
     $pct = [int]($script:SavedBytes * 100.0 / $script:DoneSrcBytes)
-    $LblSaved.Text = ('Сэкономлено: {0} · −{1}%' -f (HumanSize $script:SavedBytes), $pct)
+    $LblSaved.Text = ((T 'lbl_saved') -f (HumanSize $script:SavedBytes), $pct)
     $LblSaved.Foreground = $ClrGreen
-  } else { $LblSaved.Text = 'Сэкономлено: —'; $LblSaved.Foreground = $ClrTx2 }
+  } else { $LblSaved.Text = (T 'lbl_saved_none'); $LblSaved.Foreground = $ClrTx2 }
 }
 # своя шкала: ширину заливки считаем сами от фактической ширины трека (нативный
 # индикатор ProgressBar в этом окне отрисовывался ненадёжно)
@@ -1482,12 +1686,12 @@ function Update-Progress {
   $frac = 0.0; if ($ov.Total -gt 0) { $frac = $ov.Units / $ov.Total }
   Set-Bar $frac
   $parts = @()
-  if ($script:Paused) { $parts += '⏸ ПАУЗА' }
-  if ($script:Counts.EncTotal -gt 0) { $ed = $script:Counts.Ok + $script:Counts.Skip + $script:Counts.Err; $parts += "кодирование $ed/$($script:Counts.EncTotal) (в работе $($script:Active.Count))" }
+  if ($script:Paused) { $parts += (T 'run_paused') }
+  if ($script:Counts.EncTotal -gt 0) { $ed = $script:Counts.Ok + $script:Counts.Skip + $script:Counts.Err; $parts += ((T 'run_encoding') -f $ed, $script:Counts.EncTotal, $script:Active.Count) }
   $vt = ''; if ($script:Counts.VTotal -gt 0) { $vt = "/$($script:Counts.VTotal)" }
-  $parts += "проверено $($script:Counts.VGood)$vt"
-  if ($script:Counts.VBad -gt 0) { $parts += "провал $($script:Counts.VBad)" }
-  if ($script:MoveQueue.Count -gt 0 -or $script:MoveProc) { $parts += 'перенос результатов…' }
+  $parts += ((T 'run_verified') -f $script:Counts.VGood, $vt)
+  if ($script:Counts.VBad -gt 0) { $parts += ((T 'run_failed') -f $script:Counts.VBad) }
+  if ($script:MoveQueue.Count -gt 0 -or $script:MoveProc) { $parts += (T 'run_moving') }
   $LblStatus.Text = ('{0}%   •   {1}' -f $ov.Pct, ($parts -join '   •   '))
   Update-Stats
   Update-Eta
@@ -1536,18 +1740,20 @@ function Browse-Folders {
   # системный диалог с мультивыбором (Ctrl/Shift). Если COM почему-то недоступен —
   # откатываемся на обычный выбор одной папки.
   if ('MultiFolderPicker' -as [type]) {
-    try { $picked = @([MultiFolderPicker]::Pick('Папки с видео — можно выбрать несколько (Ctrl)', $script:BaseDir)) }
+    try { $picked = @([MultiFolderPicker]::Pick((T 'dlg_browse_multi'), $script:BaseDir)) }
     catch { Log "мультивыбор папок не сработал: $_"; $picked = @() }
   }
   if ($picked.Count -eq 0 -and -not ('MultiFolderPicker' -as [type])) {
     $dlg = New-Object System.Windows.Forms.FolderBrowserDialog
-    $dlg.Description = 'Папка с видео (можно с подпапками)'
+    $dlg.Description = (T 'dlg_browse')
     $dlg.SelectedPath = $script:BaseDir
     if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { $picked = @($dlg.SelectedPath) }
   }
   if ($picked.Count -gt 0) { Set-Roots $picked; Refresh-FileList }
 }
 $BtnBrowse.Add_Click({ Browse-Folders })
+$LnkRu.Add_MouseLeftButtonUp({ Set-Lang 'ru' })
+$LnkEn.Add_MouseLeftButtonUp({ Set-Lang 'en' })
 $BtnStart.Add_Click({ Start-Run })
 $BtnPause.Add_Click({ Toggle-Pause })
 $BtnStop.Add_Click({ Stop-Run })
@@ -1563,7 +1769,7 @@ $Timer.Start()
 
 $Window.Add_Closing({ param($s, $e)
   if ($script:Phase -eq 'run') {
-    $r = [System.Windows.MessageBox]::Show('Идёт работа. Прервать и выйти?', 'BitShift', [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+    $r = [System.Windows.MessageBox]::Show((T 'dlg_closing'), 'BitShift', [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
     if ($r -ne [System.Windows.MessageBoxResult]::Yes) { $e.Cancel = $true; return }
     Stop-Run
   }
@@ -1578,9 +1784,8 @@ $Window.Add_SourceInitialized({
   } catch {}
 })
 
-Update-DeviceLabel
 Update-FolderBox
-Refresh-FileList
+Apply-Language
 
 if ($env:HEVC_WPF_TEST -ne '1') {
   $Window.ShowDialog() | Out-Null
