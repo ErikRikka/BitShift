@@ -117,7 +117,7 @@ the tool handle the Recycle Bin.
 Requires the ps2exe module (`Install-Module ps2exe -Scope CurrentUser`):
 
 ```
-Invoke-ps2exe -inputFile HEVC-Converter-WPF.ps1 -outputFile BitShift.exe -iconFile bitshift.ico -noConsole -STA -title BitShift -product BitShift -version 3.4.0.0
+Invoke-ps2exe -inputFile HEVC-Converter-WPF.ps1 -outputFile BitShift.exe -iconFile bitshift.ico -noConsole -STA -title BitShift -product BitShift -version 3.5.0.0
 ```
 
 The source must be saved as **UTF-8 with BOM**, otherwise PowerShell 5.1 misreads Cyrillic

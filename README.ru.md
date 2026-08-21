@@ -117,7 +117,7 @@ powershell -STA -ExecutionPolicy Bypass -File HEVC-Converter-WPF.ps1
 Нужен модуль ps2exe (`Install-Module ps2exe -Scope CurrentUser`):
 
 ```
-Invoke-ps2exe -inputFile HEVC-Converter-WPF.ps1 -outputFile BitShift.exe -iconFile bitshift.ico -noConsole -STA -title BitShift -product BitShift -version 3.4.0.0
+Invoke-ps2exe -inputFile HEVC-Converter-WPF.ps1 -outputFile BitShift.exe -iconFile bitshift.ico -noConsole -STA -title BitShift -product BitShift -version 3.5.0.0
 ```
 
 Исходник должен быть сохранён в **UTF-8 с BOM**, иначе PowerShell 5.1 читает кириллицу
