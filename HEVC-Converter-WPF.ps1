@@ -8,8 +8,9 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, Sys
 
 # строка списка файлов (INotifyPropertyChanged -> список сам обновляется при смене статуса)
 if (-not ('FileRow' -as [type])) {
-Add-Type -ReferencedAssemblies PresentationCore, WindowsBase, System.Xaml -TypeDefinition @'
+Add-Type -ReferencedAssemblies PresentationFramework, PresentationCore, WindowsBase, System.Xaml -TypeDefinition @'
 using System.ComponentModel;
+using System.Windows;
 using System.Windows.Media;
 public class FileRow : INotifyPropertyChanged {
   public event PropertyChangedEventHandler PropertyChanged;
@@ -22,28 +23,42 @@ public class FileRow : INotifyPropertyChanged {
   string _status=""; public string Status { get{return _status;} set{_status=value; N("Status");} }
   Brush _sc; public Brush StatusColor { get{return _sc;} set{_sc=value; N("StatusColor");} }
   bool _chk; public bool IsChecked { get{return _chk;} set{_chk=value; N("IsChecked");} }
-  // мини-шкала прогресса в строке: ширина заливки в пикселях + цвет текущего этапа
-  double _bw; public double BarWidth { get{return _bw;} set{_bw=value; N("BarWidth");} }
+  // мини-шкала прогресса в строке: ДОЛЯ 0..100 (не пиксели) + цвет текущего этапа.
+  // Доля отдаётся разметке двумя звёздочными колонками, поэтому шкала тянется вместе с окном.
+  double _bp;
+  public double BarPct { get{return _bp;} set{_bp=value; N("BarPct"); N("BarFillLen"); N("BarRestLen");} }
+  public GridLength BarFillLen { get{ return new GridLength(_bp, GridUnitType.Star); } }
+  public GridLength BarRestLen { get{ return new GridLength(100.0-_bp, GridUnitType.Star); } }
   Brush _bc; public Brush BarColor { get{return _bc;} set{_bc=value; N("BarColor");} }
 }
 '@
 }
 
-# выбор НЕСКОЛЬКИХ папок сразу (Ctrl/Shift): системный IFileOpenDialog с флагами
-# FOS_PICKFOLDERS + FOS_ALLOWMULTISELECT. Обычный FolderBrowserDialog так не умеет.
+# ОДИН диалог на всё: в нём видно и папки, и видеофайлы. Файлы выбираются как обычно
+# (Ctrl/Shift), а папки набираются кнопкой «Добавить эту папку», которую мы дорисовываем
+# в системный диалог через IFileDialogCustomize — так папок можно взять сколько угодно,
+# не закрывая окно. Проверено пробой: кнопка появляется, папка возвращается и при
+# закрытии по «Готово», и при «Отмене» (её добавили явным нажатием).
+# Порядок методов в объявлениях интерфейсов = порядок vtable, менять нельзя.
 try {
   Add-Type -TypeDefinition @'
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-public static class MultiFolderPicker {
+// Один диалог на всё: видно и папки, и файлы. Файлы выбираются как обычно (Ctrl/Shift),
+// а папка добавляется кнопкой «Добавить эту папку» — её мы дорисовываем в диалог через
+// IFileDialogCustomize. Так папок можно набрать сколько угодно, не закрывая окно.
+public static class MixedPicker {
   [ComImport, Guid("DC1C5A9C-E88A-4DDE-A5A1-60F82A20AEF7")] private class FileOpenDialogRCW { }
+
+  [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+  private struct FilterSpec { public string pszName; public string pszSpec; }
 
   [ComImport, Guid("d57c7288-d4ad-4768-be02-9d969532d960"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
   private interface IFileOpenDialog {
     [PreserveSig] int Show(IntPtr parent);
-    void SetFileTypes(uint c, IntPtr rg);
+    void SetFileTypes(uint c, [MarshalAs(UnmanagedType.LPArray)] FilterSpec[] rg);
     void SetFileTypeIndex(uint i);
     void GetFileTypeIndex(out uint pi);
     void Advise(IntPtr pfde, out uint c);
@@ -90,19 +105,114 @@ public static class MultiFolderPicker {
     void EnumItems(out IntPtr ppenum);
   }
 
+  // порядок методов = порядок в vtable, менять нельзя
+  [ComImport, Guid("e6fdd21a-163f-4975-9c8c-a69f1ba37034"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  private interface IFileDialogCustomize {
+    void EnableOpenDropDown(int id);
+    void AddMenu(int id, [MarshalAs(UnmanagedType.LPWStr)] string label);
+    void AddPushButton(int id, [MarshalAs(UnmanagedType.LPWStr)] string label);
+    void AddComboBox(int id);
+    void AddRadioButtonList(int id);
+    void AddCheckButton(int id, [MarshalAs(UnmanagedType.LPWStr)] string label, bool check);
+    void AddEditBox(int id, [MarshalAs(UnmanagedType.LPWStr)] string text);
+    void AddSeparator(int id);
+    void AddText(int id, [MarshalAs(UnmanagedType.LPWStr)] string text);
+    void SetControlLabel(int id, [MarshalAs(UnmanagedType.LPWStr)] string label);
+    void GetControlState(int id, out int state);
+    void SetControlState(int id, int state);
+    void GetEditBoxText(int id, out IntPtr text);
+    void SetEditBoxText(int id, [MarshalAs(UnmanagedType.LPWStr)] string text);
+    void GetCheckButtonState(int id, out bool check);
+    void SetCheckButtonState(int id, bool check);
+    void AddControlItem(int id, int item, [MarshalAs(UnmanagedType.LPWStr)] string label);
+    void RemoveControlItem(int id, int item);
+    void RemoveAllControlItems(int id);
+    void GetControlItemState(int id, int item, out int state);
+    void SetControlItemState(int id, int item, int state);
+    void GetSelectedControlItem(int id, out int item);
+    void SetSelectedControlItem(int id, int item);
+    void StartVisualGroup(int id, [MarshalAs(UnmanagedType.LPWStr)] string label);
+    void EndVisualGroup();
+    void MakeProminent(int id);
+    void SetControlItemText(int id, int item, [MarshalAs(UnmanagedType.LPWStr)] string label);
+  }
+
+  [ComImport, Guid("973510db-7d7f-452b-8975-74a85828d354"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  private interface IFileDialogEvents {
+    [PreserveSig] int OnFileOk(IntPtr pfd);
+    [PreserveSig] int OnFolderChanging(IntPtr pfd, IntPtr psiFolder);
+    [PreserveSig] int OnFolderChange(IntPtr pfd);
+    [PreserveSig] int OnSelectionChange(IntPtr pfd);
+    [PreserveSig] int OnShareViolation(IntPtr pfd, IntPtr psi, out int response);
+    [PreserveSig] int OnTypeChange(IntPtr pfd);
+    [PreserveSig] int OnOverwrite(IntPtr pfd, IntPtr psi, out int response);
+  }
+
+  [ComImport, Guid("36116642-D713-4b97-9B83-7484A9D00433"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  private interface IFileDialogControlEvents {
+    [PreserveSig] int OnItemSelected(IntPtr pfdc, int dwIDCtl, int dwIDItem);
+    [PreserveSig] int OnButtonClicked(IntPtr pfdc, int dwIDCtl);
+    [PreserveSig] int OnCheckButtonToggled(IntPtr pfdc, int dwIDCtl, bool bChecked);
+    [PreserveSig] int OnControlActivating(IntPtr pfdc, int dwIDCtl);
+  }
+
   [DllImport("shell32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
   private static extern void SHCreateItemFromParsingName(
     [MarshalAs(UnmanagedType.LPWStr)] string path, IntPtr pbc, ref Guid riid,
     [MarshalAs(UnmanagedType.Interface)] out IShellItem ppv);
 
-  private const uint FOS_PICKFOLDERS = 0x20, FOS_FORCEFILESYSTEM = 0x40, FOS_ALLOWMULTISELECT = 0x200;
+  private const uint FOS_FORCEFILESYSTEM = 0x40, FOS_ALLOWMULTISELECT = 0x200, FOS_FILEMUSTEXIST = 0x1000;
   private const uint SIGDN_FILESYSPATH = 0x80058000;
+  private const int BTN_ADD = 3001, TXT_INFO = 3002;
 
-  public static string[] Pick(string title, string initial) {
+  [ComVisible(true)]
+  private class Sink : IFileDialogEvents, IFileDialogControlEvents {
+    private readonly IFileOpenDialog _dlg;
+    private readonly IFileDialogCustomize _cust;
+    private readonly string _addedFmt;
+    public readonly List<string> Folders = new List<string>();
+    public Sink(IFileOpenDialog dlg, IFileDialogCustomize cust, string addedFmt) { _dlg = dlg; _cust = cust; _addedFmt = addedFmt; }
+
+    public int OnFileOk(IntPtr pfd) { return 0; }
+    public int OnFolderChanging(IntPtr pfd, IntPtr psiFolder) { return 0; }
+    public int OnFolderChange(IntPtr pfd) { return 0; }
+    public int OnSelectionChange(IntPtr pfd) { return 0; }
+    public int OnShareViolation(IntPtr pfd, IntPtr psi, out int response) { response = 0; return 0; }
+    public int OnTypeChange(IntPtr pfd) { return 0; }
+    public int OnOverwrite(IntPtr pfd, IntPtr psi, out int response) { response = 0; return 0; }
+
+    public int OnItemSelected(IntPtr pfdc, int id, int item) { return 0; }
+    public int OnCheckButtonToggled(IntPtr pfdc, int id, bool ch) { return 0; }
+    public int OnControlActivating(IntPtr pfdc, int id) { return 0; }
+    public int OnButtonClicked(IntPtr pfdc, int id) {
+      if (id != BTN_ADD) return 0;
+      try {
+        IShellItem si; _dlg.GetFolder(out si);        // папка, которая открыта прямо сейчас
+        if (si == null) return 0;
+        IntPtr p; si.GetDisplayName(SIGDN_FILESYSPATH, out p);
+        if (p == IntPtr.Zero) return 0;
+        string path = Marshal.PtrToStringUni(p); Marshal.FreeCoTaskMem(p);
+        if (!string.IsNullOrEmpty(path) && !Folders.Contains(path)) Folders.Add(path);
+        try { _cust.SetControlLabel(TXT_INFO, string.Format(_addedFmt, Folders.Count)); } catch { }
+      } catch { }
+      return 0;
+    }
+  }
+
+  // title/okLabel/addLabel/addedFmt/videoLabel/allLabel приходят из словаря приложения
+  public static string[] Pick(string title, string initial, string okLabel, string addLabel,
+                              string addedFmt, string videoLabel, string videoMask, string allLabel) {
     IFileOpenDialog dlg = (IFileOpenDialog)(new FileOpenDialogRCW());
     uint opts; dlg.GetOptions(out opts);
-    dlg.SetOptions(opts | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM | FOS_ALLOWMULTISELECT);
+    dlg.SetOptions(opts | FOS_FORCEFILESYSTEM | FOS_ALLOWMULTISELECT | FOS_FILEMUSTEXIST);
     if (!string.IsNullOrEmpty(title)) dlg.SetTitle(title);
+    if (!string.IsNullOrEmpty(okLabel)) dlg.SetOkButtonLabel(okLabel);
+    try {
+      FilterSpec[] specs = new FilterSpec[2];
+      specs[0].pszName = videoLabel; specs[0].pszSpec = videoMask;
+      specs[1].pszName = allLabel;   specs[1].pszSpec = "*.*";
+      dlg.SetFileTypes(2, specs);
+    } catch { }
     if (!string.IsNullOrEmpty(initial) && System.IO.Directory.Exists(initial)) {
       try {
         Guid ig = typeof(IShellItem).GUID; IShellItem si;
@@ -110,14 +220,31 @@ public static class MultiFolderPicker {
         if (si != null) dlg.SetFolder(si);
       } catch { }
     }
-    if (dlg.Show(IntPtr.Zero) != 0) return new string[0];   // отмена
-    IShellItemArray arr; dlg.GetResults(out arr);
-    uint n; arr.GetCount(out n);
-    List<string> res = new List<string>();
-    for (uint i = 0; i < n; i++) {
-      IShellItem it; arr.GetItemAt(i, out it);
-      IntPtr p; it.GetDisplayName(SIGDN_FILESYSPATH, out p);
-      if (p != IntPtr.Zero) { res.Add(Marshal.PtrToStringUni(p)); Marshal.FreeCoTaskMem(p); }
+    IFileDialogCustomize cust = (IFileDialogCustomize)dlg;
+    cust.AddPushButton(BTN_ADD, addLabel);
+    cust.AddText(TXT_INFO, string.Format(addedFmt, 0));
+
+    Sink sink = new Sink(dlg, cust, addedFmt);
+    IntPtr pSink = Marshal.GetComInterfaceForObject(sink, typeof(IFileDialogEvents));
+    uint cookie = 0;
+    try { dlg.Advise(pSink, out cookie); } catch { }
+
+    int hr = dlg.Show(IntPtr.Zero);
+
+    try { if (cookie != 0) dlg.Unadvise(cookie); } catch { }
+    if (pSink != IntPtr.Zero) Marshal.Release(pSink);
+
+    List<string> res = new List<string>(sink.Folders);   // папки засчитываем всегда: их добавили явно
+    if (hr == 0) {
+      try {
+        IShellItemArray arr; dlg.GetResults(out arr);
+        uint n; arr.GetCount(out n);
+        for (uint i = 0; i < n; i++) {
+          IShellItem it; arr.GetItemAt(i, out it);
+          IntPtr p; it.GetDisplayName(SIGDN_FILESYSPATH, out p);
+          if (p != IntPtr.Zero) { string s = Marshal.PtrToStringUni(p); Marshal.FreeCoTaskMem(p); if (!res.Contains(s)) res.Add(s); }
+        }
+      } catch { }
     }
     return res.ToArray();
   }
@@ -136,7 +263,6 @@ function Br([string]$hex) { $b = New-Object System.Windows.Media.SolidColorBrush
 $ClrTx = Br '#F0F0F3'; $ClrTx2 = Br '#97979F'; $ClrGray = $ClrTx2
 $ClrGreen = Br '#5FCE9A'; $ClrBlue = Br '#7FB2EE'; $ClrRed = Br '#E8756F'
 $ClrViolet = Br '#A99BF0'          # этап проверки
-$ROWBAR_W = 300.0                  # ширина шкалы в строке (см. Width у Border в шаблоне)
 
 # ---------------- локализация ----------------
 # Интерфейс на двух языках. Язык берётся из системы (русская Windows -> русский,
@@ -187,7 +313,11 @@ $script:Str = @{
   dlg_nofiles='Нет ни выбранных файлов, ни готовых пар для проверки.'
   dlg_confirm="Проверка пройдена: {0} файлов.`n`nУдалить {0} проверенных оригиналов в Корзину?`nИз Корзины всё можно вернуть."
   dlg_closing='Идёт работа. Прервать и выйти?'
-  dlg_browse='Папка с видео (можно с подпапками)'; dlg_browse_multi='Папки с видео — можно выбрать несколько (Ctrl)'
+  dlg_pick='Видео: выбери файлы (Ctrl) или добавь папки целиком'
+  dlg_ok='Готово'; dlg_add_folder='Добавить эту папку'; dlg_added='Добавлено папок: {0}'
+  pick_folder_hint='(вся эта папка)'; filter_video='Видео'; filter_all='Все файлы'
+  files_picked='Выбрано файлов: {0}'; mix_picked='Папок: {0} · файлов: {1}'
+  st_wrong_mode='не для этого режима'
   fail_ffmpeg="ffmpeg не найден. Установи его командой:`n`n    winget install Gyan.FFmpeg`n`nи запусти конвертер заново."
   fail_nvenc="В этой сборке ffmpeg нет hevc_nvenc.`nПоставь стандартную сборку: winget install Gyan.FFmpeg"
   shutdown_note='Компьютер выключится через {0} с. Отмена: shutdown /a'
@@ -242,7 +372,11 @@ $script:Str = @{
   dlg_nofiles='Nothing to do: no files selected and no finished pairs to verify.'
   dlg_confirm="Verification passed: {0} files.`n`nMove {0} verified originals to the Recycle Bin?`nEverything can be restored from there."
   dlg_closing='A run is in progress. Abort and quit?'
-  dlg_browse='Folder with video (subfolders optional)'; dlg_browse_multi='Folders with video — you can pick several (Ctrl)'
+  dlg_pick='Video: pick files (Ctrl) or add whole folders'
+  dlg_ok='Done'; dlg_add_folder='Add this folder'; dlg_added='Folders added: {0}'
+  pick_folder_hint='(this whole folder)'; filter_video='Video'; filter_all='All files'
+  files_picked='Files selected: {0}'; mix_picked='Folders: {0} · files: {1}'
+  st_wrong_mode='not for this mode'
   fail_ffmpeg="ffmpeg not found. Install it with:`n`n    winget install Gyan.FFmpeg`n`nthen start BitShift again."
   fail_nvenc="This ffmpeg build has no hevc_nvenc.`nInstall a standard build: winget install Gyan.FFmpeg"
   shutdown_note='The computer will shut down in {0} s. Cancel with: shutdown /a'
@@ -304,6 +438,14 @@ if (-not $script:BaseDir -or -not (Test-Path -LiteralPath $script:BaseDir)) { $s
 # Выбранных папок может быть несколько. Пустой список = работаем по $script:BaseDir
 # (так продолжают работать тест-хуки, которые ставят только BaseDir).
 $script:BaseDirs = @()
+# В одном диалоге можно взять и папки целиком, и отдельные файлы. Корнями (BaseDirs)
+# в любом случае становятся папки — от них зависят SSD-кэш, лог и имена строк.
+# ScanDirs — папки, выбранные ЦЕЛИКОМ (их сканируем), PickedFiles — поштучно выбранные
+# файлы (в их папке берём только их). Обе пустые = работаем по BaseDir (так живут тест-хуки).
+$script:ScanDirs = @()
+$script:PickedFiles = @()
+# выбраны только отдельные файлы: рекурсия по подпапкам в этом случае бессмысленна
+function FilesOnlyMode { return ($script:PickedFiles.Count -gt 0 -and $script:ScanDirs.Count -eq 0) }
 function CurrentRoots {
   $r = @($script:BaseDirs | Where-Object { $_ })
   if ($r.Count -eq 0) { $r = @($script:BaseDir) }
@@ -331,7 +473,8 @@ $SUFFIX = '_v2'
 $script:ModeSel = 2
 $script:CodecSel = 1     # HEVC по умолчанию: играет везде, в т.ч. на маке (у M1/M2 нет
                          # аппаратного декода AV1 — он появился только с M3)
-$script:AudioSel = 0     # 0 = звук оригинала (без потерь), 1 = AAC стерео
+$script:AudioSel = 1     # 0 = звук оригинала (без потерь), 1 = AAC стерео (по умолчанию:
+                         # разница по размеру огромна, а 16-канальный PCM ещё и роняет ffmpeg)
 function CurrentMode  { return $Modes[$script:ModeSel] }
 function CurrentCodec { return $Codecs[$script:CodecSel] }
 function OutName([System.IO.FileInfo]$fi, $mode) {
@@ -504,7 +647,7 @@ function StartRobocopy([string]$fromDir, [string]$toDir, [string]$name, [bool]$m
 $xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="BitShift" Height="700" Width="900" MinHeight="672" MinWidth="820"
+        Title="BitShift" Height="700" Width="1035" MinHeight="672" MinWidth="900"
         WindowStartupLocation="CenterScreen" Background="#0A0A0C"
         WindowStyle="None" ResizeMode="CanResize"
         FontFamily="Segoe UI" TextOptions.TextFormattingMode="Display" UseLayoutRounding="True">
@@ -715,6 +858,30 @@ $xaml = @'
         </Setter.Value>
       </Setter>
     </Style>
+    <Style x:Key="Toggle" TargetType="ToggleButton">
+      <Setter Property="Foreground" Value="{StaticResource Tx2}"/>
+      <Setter Property="FontSize" Value="12.5"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ToggleButton">
+            <Border x:Name="b" Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="9" Padding="14,7">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="b" Property="Background" Value="{StaticResource Pill}"/></Trigger>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter Property="Foreground" Value="{StaticResource Tx}"/>
+                <Setter TargetName="b" Property="Background" Value="#33203A"/>
+                <Setter TargetName="b" Property="BorderBrush" Value="#8E1A58"/>
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4"/></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
   </Window.Resources>
 
   <Grid x:Name="Root" Margin="14">
@@ -789,13 +956,13 @@ $xaml = @'
           </RadioButton>
 
           <TextBlock x:Name="LblSecAudio" Text="ЗВУК" Foreground="{StaticResource Tx3}" FontSize="10.5" Margin="0,17,0,5"/>
-          <RadioButton x:Name="Audio0" GroupName="A" Style="{StaticResource Nav}" IsChecked="True">
+          <RadioButton x:Name="Audio0" GroupName="A" Style="{StaticResource Nav}">
             <StackPanel Orientation="Horizontal">
               <Path Style="{StaticResource NavIcon}" Data="M2.5,6 V10 M6,2.8 V13.2 M9.5,4.8 V11.2 M13,6.3 V9.7"/>
               <TextBlock x:Name="LblAudio0" Text="Оригинал" VerticalAlignment="Center"/>
             </StackPanel>
           </RadioButton>
-          <RadioButton x:Name="Audio1" GroupName="A" Style="{StaticResource Nav}">
+          <RadioButton x:Name="Audio1" GroupName="A" Style="{StaticResource Nav}" IsChecked="True">
             <StackPanel Orientation="Horizontal">
               <Path Style="{StaticResource NavIcon}" Data="M2,6.2 H5 L9,3 V13 L5,9.8 H2 Z M11.6,6.2 A3.4,3.4 0 0 1 11.6,9.8"/>
               <TextBlock x:Name="LblAudio1" Text="AAC" VerticalAlignment="Center"/>
@@ -804,7 +971,7 @@ $xaml = @'
         </StackPanel>
         <!-- шестерёнка внизу рейла: редкие настройки спрятаны сюда, чтобы не шуметь
              в основном экране. Всплывающая карточка появляется над значком -->
-        <Grid DockPanel.Dock="Bottom" Margin="0,0,0,8" HorizontalAlignment="Left">
+        <Grid DockPanel.Dock="Bottom" Margin="0,0,0,8" HorizontalAlignment="Right">
           <Border x:Name="BtnGear" Background="Transparent" CornerRadius="8" Padding="5" Cursor="Hand"
                   ToolTip="Настройки">
             <Grid Width="18" Height="18">
@@ -812,7 +979,7 @@ $xaml = @'
             </Grid>
           </Border>
           <Popup x:Name="PopSettings" PlacementTarget="{Binding ElementName=BtnGear}" Placement="Top"
-                 VerticalOffset="-8" HorizontalOffset="-4" StaysOpen="False" AllowsTransparency="True"
+                 VerticalOffset="-8" HorizontalOffset="4" StaysOpen="False" AllowsTransparency="True"
                  PopupAnimation="Fade">
             <Border Background="#1C1C22" BorderBrush="{StaticResource Line}" BorderThickness="1"
                     CornerRadius="12" Padding="15,13" Width="316">
@@ -834,7 +1001,6 @@ $xaml = @'
             </Border>
           </Popup>
         </Grid>
-        <CheckBox x:Name="ChkSub" DockPanel.Dock="Bottom" Content="Включая подпапки" Foreground="{StaticResource Tx2}" FontSize="11.5" Margin="2,0,0,2"/>
         <StackPanel x:Name="StatsPanel" DockPanel.Dock="Bottom" Margin="2,0,0,12">
           <TextBlock x:Name="LblSecVolume" Text="ОБЪЁМ" Foreground="{StaticResource Tx3}" FontSize="10.5" Margin="0,0,0,5"/>
           <TextBlock x:Name="LblSrcTotal" Foreground="{StaticResource Tx2}" FontSize="12" Text="—"/>
@@ -858,11 +1024,20 @@ $xaml = @'
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0">
-          <StackPanel>
-            <TextBlock x:Name="LblTitle" Text="Исходники шоу" Foreground="{StaticResource Tx}" FontSize="17" FontWeight="SemiBold"/>
-            <TextBlock x:Name="LblCount" Foreground="{StaticResource Tx3}" FontSize="11.5" Margin="0,2,0,0"/>
+          <!-- заголовок и кнопки — в РАЗНЫХ колонках: иначе на узком окне правая группа
+               наезжает на название режима (у «Старое видео (AVI, WMV, MTS)» оно длинное) -->
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,0">
+            <TextBlock x:Name="LblTitle" Text="Исходники шоу" Foreground="{StaticResource Tx}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+            <TextBlock x:Name="LblCount" Foreground="{StaticResource Tx3}" FontSize="11.5" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
           </StackPanel>
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+          <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+            <!-- подпапки это область выбора, поэтому переключатель стоит рядом с «Обзор…».
+                 Включён по умолчанию; выключенный неотличим от соседних кнопок, включённый светится акцентом -->
+            <ToggleButton x:Name="ChkSub" Style="{StaticResource Toggle}" IsChecked="True" Margin="0,0,8,0"/>
             <Button x:Name="BtnBrowse" Style="{StaticResource Flat}" Content="Обзор…" Margin="0,0,8,0"/>
             <Button x:Name="BtnRefresh" Style="{StaticResource Flat}" Content="Обновить"/>
             <Button x:Name="BtnMin" Style="{StaticResource WinBtn}" Content="&#x2013;" Margin="16,0,0,0"/>
@@ -886,9 +1061,16 @@ $xaml = @'
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                   <TextBlock Text="{Binding Name}" Foreground="#F0F0F3" FontSize="13"/>
                   <TextBlock Text="{Binding Info}" Foreground="#66666E" FontSize="11"/>
-                  <!-- шкала текущего этапа: копирование / кодирование / проверка / перенос -->
-                  <Border Height="3" Width="300" HorizontalAlignment="Left" Background="#1E1E23" CornerRadius="2" Margin="0,4,0,0">
-                    <Border HorizontalAlignment="Left" Width="{Binding BarWidth}" Background="{Binding BarColor}" CornerRadius="2"/>
+                  <!-- шкала текущего этапа: копирование / кодирование / проверка / перенос.
+                       Ширина не фиксирована: заливка и остаток это звёздочные колонки, доля приходит из BarPct -->
+                  <Border Height="3" Background="#1E1E23" CornerRadius="2" Margin="0,4,0,0">
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="{Binding BarFillLen}"/>
+                        <ColumnDefinition Width="{Binding BarRestLen}"/>
+                      </Grid.ColumnDefinitions>
+                      <Border Grid.Column="0" Background="{Binding BarColor}" CornerRadius="2"/>
+                    </Grid>
                   </Border>
                 </StackPanel>
                 <TextBlock Grid.Column="2" Text="{Binding Size}" Foreground="#97979F" FontSize="12" VerticalAlignment="Center" Margin="12,0"/>
@@ -918,9 +1100,10 @@ $xaml = @'
             <Button x:Name="BtnPause" Style="{StaticResource Flat}" Content="Пауза" IsEnabled="False" Margin="0,0,10,0"/>
             <Button x:Name="BtnStop" Style="{StaticResource Flat}" Content="Стоп" IsEnabled="False"/>
           </StackPanel>
-          <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom">
-            <Button x:Name="BtnDelete" Style="{StaticResource Flat}" Content="Удалить проверенные в Корзину…" HorizontalAlignment="Right" IsEnabled="False"/>
-          </StackPanel>
+          <!-- VerticalAlignment="Stretch" — кнопка тянется на высоту строки, то есть всегда
+               вровень со «Стартом»; жёсткая высота разъехалась бы при системном масштабе шрифта -->
+          <Button x:Name="BtnDelete" Style="{StaticResource Flat}" Content="Удалить проверенные в Корзину…"
+                  FontSize="13.5" HorizontalAlignment="Right" VerticalAlignment="Stretch" IsEnabled="False"/>
         </Grid>
       </Grid>
     </Border>
@@ -992,7 +1175,7 @@ $chrome.ResizeBorderThickness = New-Object System.Windows.Thickness 6
 $chrome.GlassFrameThickness = New-Object System.Windows.Thickness 0
 $chrome.CornerRadius = New-Object System.Windows.CornerRadius 0
 [System.Windows.Shell.WindowChrome]::SetWindowChrome($Window, $chrome)
-foreach ($b in @($BtnBrowse, $BtnRefresh, $BtnMin, $BtnClose)) { [System.Windows.Shell.WindowChrome]::SetIsHitTestVisibleInChrome($b, $true) }
+foreach ($b in @($ChkSub, $BtnBrowse, $BtnRefresh, $BtnMin, $BtnClose)) { [System.Windows.Shell.WindowChrome]::SetIsHitTestVisibleInChrome($b, $true) }
 $BtnMin.Add_Click({ $Window.WindowState = 'Minimized' })
 $BtnClose.Add_Click({ $Window.Close() })
 
@@ -1006,10 +1189,10 @@ function Set-ItemStatus($row, [string]$text, $brush) {
 }
 # мини-шкала в строке: $pct 0..100, $brush = цвет этапа. $pct < 0 — спрятать шкалу.
 function Set-RowBar($row, [double]$pct, $brush) {
-  if ($pct -lt 0) { $row.BarWidth = 0.0; return }
+  if ($pct -lt 0) { $row.BarPct = 0.0; return }
   if ($pct -gt 100) { $pct = 100 }
   if ($brush) { $row.BarColor = $brush }
-  $row.BarWidth = [math]::Round($ROWBAR_W * $pct / 100.0)
+  $row.BarPct = $pct
 }
 # доля скопированного: сравниваем размер файла-назначения с исходным
 function CopyPct([string]$dest, [long]$srcLen) {
@@ -1036,13 +1219,31 @@ function Refresh-FileList {
   $recurse = ($ChkSub -and $ChkSub.IsChecked -eq $true)
   $multi = ($roots.Count -gt 1)
   $seenOuts = @{}; $nNew = 0; $nReady = 0; $nTotal = 0
+  $picked = @($script:PickedFiles | Where-Object { $_ -and (Test-Path -LiteralPath $_) })
+  $scan = @($script:ScanDirs | ForEach-Object { $_.TrimEnd('\') })
   foreach ($root in $roots) {
   $base = $root.TrimEnd('\')
-  $cand = @(Get-ChildItem -LiteralPath $root -File -Recurse:$recurse -ErrorAction SilentlyContinue |
-            Where-Object { $mode.Ext -contains $_.Extension.ToLower() } | Sort-Object FullName)
+  # папку, выбранную целиком, сканируем; в папке, из которой брали отдельные файлы, — только их
+  if ($picked.Count -gt 0 -and $scan -notcontains $base) {
+    # выбраны конкретные файлы: берём только их и НЕ фильтруем по расширению —
+    # неподходящий текущему режиму файл показываем отдельной строкой, а не прячем молча
+    $cand = @($picked | Where-Object { (Split-Path $_ -Parent).TrimEnd('\') -ieq $base } |
+              ForEach-Object { Get-Item -LiteralPath $_ -ErrorAction SilentlyContinue } | Sort-Object FullName)
+  } else {
+    $cand = @(Get-ChildItem -LiteralPath $root -File -Recurse:$recurse -ErrorAction SilentlyContinue |
+              Where-Object { $mode.Ext -contains $_.Extension.ToLower() } | Sort-Object FullName)
+  }
   $nTotal += $cand.Count
   foreach ($fi in $cand) {
     if ($fi.BaseName.ToLower().EndsWith($SUFFIX)) { continue }
+    if ($mode.Ext -notcontains $fi.Extension.ToLower()) {
+      $row = New-Object FileRow
+      $row.Name = $fi.Name; $row.Size = (HumanSize $fi.Length); $row.Info = ''
+      $row.Tag = @{ Kind='skip'; Path=$fi.FullName; Out=''; Locked=$true; Bytes=$fi.Length }
+      $row.CanCheck = $false; $row.IsChecked = $false
+      Set-ItemStatus $row (T 'st_wrong_mode') $ClrTx2
+      $script:Rows.Add($row); continue
+    }
     $out = Join-Path $fi.DirectoryName (OutName $fi $mode)
     $row = New-Object FileRow
     # имя = путь относительно выбранной папки (в рекурсии показывает подпапку).
@@ -1103,8 +1304,25 @@ function Refresh-FileList {
 function Set-Roots([string[]]$dirs) {
   $d = @($dirs | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -Unique)
   if ($d.Count -eq 0) { return }
-  $script:BaseDirs = $d
-  $script:BaseDir = $d[0]          # первый корень — «основной» (кэш, тест-хуки)
+  Set-Selection $d
+}
+# общий вход для выбора: на входе вперемешку папки и файлы, как их отдал диалог.
+# Папки идут в ScanDirs (сканируем целиком), файлы — в PickedFiles, а корнями
+# становятся и те, и папки выбранных файлов.
+function Set-Selection([string[]]$paths) {
+  $items = @($paths | Where-Object { $_ } | Select-Object -Unique)
+  $dirs = @(); $files = @()
+  foreach ($it in $items) {
+    if (Test-Path -LiteralPath $it -PathType Container) { $dirs += $it.TrimEnd('\') }
+    elseif (Test-Path -LiteralPath $it -PathType Leaf) { $files += $it }
+  }
+  if ($dirs.Count -eq 0 -and $files.Count -eq 0) { return }
+  $script:ScanDirs = @($dirs | Select-Object -Unique)
+  $script:PickedFiles = @($files | Select-Object -Unique)
+  $roots = @($script:ScanDirs) + @($script:PickedFiles | ForEach-Object { (Split-Path $_ -Parent).TrimEnd('\') })
+  $script:BaseDirs = @($roots | Where-Object { $_ } | Select-Object -Unique)
+  $script:BaseDir = $script:BaseDirs[0]   # первый корень — «основной» (кэш, тест-хуки)
+  if ($ChkSub) { $ChkSub.IsEnabled = -not (FilesOnlyMode) }
   Update-FolderBox
 }
 # проставляет все надписи интерфейса на текущем языке и подсвечивает выбранный
@@ -1122,6 +1340,7 @@ function Apply-Language {
   $LblAudio0.Text = T 'audio_orig'; $LblAudio1.Text = T 'audio_aac'
   $BtnBrowse.Content  = T 'btn_browse'
   $BtnRefresh.Content = T 'btn_refresh'
+  Update-FolderBox    # подпись выбора тоже переводится ('Выбрано файлов: 5')
   $BtnStart.Content   = T 'btn_start'
   $BtnStop.Content    = T 'btn_stop'
   if ($script:Paused) { $BtnPause.Content = T 'btn_resume' } else { $BtnPause.Content = T 'btn_pause' }
@@ -1161,6 +1380,18 @@ function Update-DeviceLabel {
 }
 # подпись выбранной папки в рейле: короткое имя, полный путь — в подсказке
 function Update-FolderBox {
+  if ($script:PickedFiles.Count -gt 0 -and $script:ScanDirs.Count -gt 0) {
+    $TxtFolder.Text = ((T 'mix_picked') -f $script:ScanDirs.Count, $script:PickedFiles.Count)
+    $TxtFolder.ToolTip = ((@($script:ScanDirs) + @($script:PickedFiles | Select-Object -First 20)) -join "`n")
+    return
+  }
+  if ($script:PickedFiles.Count -gt 0) {
+    $TxtFolder.Text = ((T 'files_picked') -f $script:PickedFiles.Count)
+    $tip = @($script:PickedFiles | Select-Object -First 20)
+    if ($script:PickedFiles.Count -gt 20) { $tip += '…' }
+    $TxtFolder.ToolTip = ($tip -join "`n")
+    return
+  }
   $d = @($script:BaseDirs | Where-Object { $_ })
   if ($d.Count -eq 0) { $d = @($script:BaseDir) }
   if ($d.Count -gt 1) {
@@ -1254,6 +1485,8 @@ function Set-ControlsEnabled([bool]$on) {
   foreach ($b in $script:CodecBtns) { $b.IsEnabled = $on }
   foreach ($b in $script:AudioBtns) { $b.IsEnabled = $on }
   $BtnBrowse.IsEnabled = $on; $BtnRefresh.IsEnabled = $on
+  # при выборе отдельных файлов подпапки не при чём — переключатель гасим и там
+  $ChkSub.IsEnabled = ($on -and -not (FilesOnlyMode))
   # список НЕ гасим: отключённый ListBox светлеет, да и прокрутка во время работы полезна
 }
 
@@ -1767,22 +2000,66 @@ for ($i = 0; $i -lt 2; $i++) {
 }
 $BtnRefresh.Add_Click({ Refresh-FileList })
 $ChkSub.Add_Click({ if ($script:Phase -in @('idle','done')) { Refresh-FileList } })
+# разбор того, что вернул ЗАПАСНОЙ диалог: путь с заглушкой в имени означает «взять эту
+# папку целиком», остальное — выбранные файлы. Вынесено отдельно, потому что сам диалог
+# вслепую не проверить, а разбор — можно.
+function Resolve-Picked([string[]]$names, [string]$hint) {
+  $out = @()
+  foreach ($f in @($names)) {
+    if (-not $f) { continue }
+    $leaf = ''
+    try { $leaf = Split-Path $f -Leaf } catch {}
+    # AddExtension может дописать .mp4 к заглушке — сравниваем и без расширения
+    $bare = $leaf; try { $bare = [IO.Path]::GetFileNameWithoutExtension($leaf) } catch {}
+    if ($leaf -eq $hint -or $bare -eq $hint) {
+      $d = ''
+      try { $d = Split-Path $f -Parent } catch {}
+      if ($d -and (Test-Path -LiteralPath $d -PathType Container)) { $out += $d }
+      continue
+    }
+    if (Test-Path -LiteralPath $f) { $out += $f }
+  }
+  return $out
+}
+# маска видеофайлов для фильтра: расширения ВСЕХ режимов, иначе файл, не подходящий
+# текущему режиму, просто не был бы виден в диалоге
+function VideoMask {
+  $ext = @($Modes | ForEach-Object { $_.Ext } | Select-Object -Unique | Sort-Object)
+  return (($ext | ForEach-Object { '*' + $_ }) -join ';')
+}
+# запасной диалог: если COM-класс почему-то не собрался. Умеет файлы и ОДНУ папку —
+# заглушка в поле имени возвращается как «<папка>\(вся эта папка)»
+function Browse-Fallback {
+  $dlg = New-Object System.Windows.Forms.OpenFileDialog
+  $dlg.Title           = (T 'dlg_pick')
+  $dlg.Multiselect     = $true
+  $dlg.CheckFileExists = $false
+  $dlg.CheckPathExists = $true
+  $dlg.ValidateNames   = $false
+  $dlg.AddExtension    = $false      # иначе к заглушке допишется .mp4 и она не опознается
+  $mask = VideoMask
+  $dlg.Filter = ((T 'filter_video') + " ($mask)|$mask|" + (T 'filter_all') + ' (*.*)|*.*')
+  $hint = (T 'pick_folder_hint')
+  $dlg.FileName = $hint
+  try { if ($script:BaseDir -and (Test-Path -LiteralPath $script:BaseDir)) { $dlg.InitialDirectory = $script:BaseDir } } catch {}
+  if ($dlg.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) { return @() }
+  return @(Resolve-Picked @($dlg.FileNames) $hint)
+}
 function Browse-Folders {
   if ($script:Phase -notin @('idle','done')) { return }
   $picked = @()
-  # системный диалог с мультивыбором (Ctrl/Shift). Если COM почему-то недоступен —
-  # откатываемся на обычный выбор одной папки.
-  if ('MultiFolderPicker' -as [type]) {
-    try { $picked = @([MultiFolderPicker]::Pick((T 'dlg_browse_multi'), $script:BaseDir)) }
-    catch { Log "мультивыбор папок не сработал: $_"; $picked = @() }
+  if ('MixedPicker' -as [type]) {
+    try {
+      $picked = @([MixedPicker]::Pick((T 'dlg_pick'), $script:BaseDir, (T 'dlg_ok'),
+                                      (T 'dlg_add_folder'), (T 'dlg_added'),
+                                      (T 'filter_video'), (VideoMask), (T 'filter_all')))
+    } catch { Log "диалог выбора не сработал: $_"; $picked = @() }
+  } else {
+    $picked = @(Browse-Fallback)
   }
-  if ($picked.Count -eq 0 -and -not ('MultiFolderPicker' -as [type])) {
-    $dlg = New-Object System.Windows.Forms.FolderBrowserDialog
-    $dlg.Description = (T 'dlg_browse')
-    $dlg.SelectedPath = $script:BaseDir
-    if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { $picked = @($dlg.SelectedPath) }
-  }
-  if ($picked.Count -gt 0) { Set-Roots $picked; Refresh-FileList }
+  if ($picked.Count -eq 0) { return }
+  Set-Selection $picked
+  Refresh-FileList
 }
 $BtnBrowse.Add_Click({ Browse-Folders })
 $PopSettings.PlacementTarget = $BtnGear
