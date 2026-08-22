@@ -43,6 +43,7 @@ from core.config import (
     SHUTDOWN_COMMAND,
     SHUTDOWN_DELAY,
     WINDOW_BACKGROUND,
+    WINDOW_GLASS,
     WINDOW_HEIGHT,
     WINDOW_MIN_SIZE,
     WINDOW_PUSH_INTERVAL,
@@ -755,6 +756,8 @@ def main() -> int:
         height=WINDOW_HEIGHT,
         min_size=WINDOW_MIN_SIZE,
         background_color=WINDOW_BACKGROUND,
+        transparent=WINDOW_GLASS,
+        vibrancy=WINDOW_GLASS,
     )
     api.attach(window)
     window.events.shown += lambda: apply_native_titlebar(window)
