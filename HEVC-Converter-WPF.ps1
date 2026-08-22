@@ -282,6 +282,7 @@ $script:Str = @{
   btn_delete='Удалить проверенные в Корзину…'; btn_delete_n='Удалить проверенные ({0}) в Корзину…'
   chk_sub='Включая подпапки'; chk_shutdown='Выключить компьютер после завершения'
   chk_auto='Удалять исходники в Корзину после проверки'
+  lbl_version='BitShift {0}'
   hint_safety='Оригиналы не перезаписываются. Удаление — только в Корзину, после проверки.'
   lbl_to_process='К обработке: '; lbl_src_total='Объём исходников: '
   lbl_saved='Сэкономлено: {0} · −{1}%'; lbl_saved_none='Сэкономлено: —'
@@ -341,6 +342,7 @@ $script:Str = @{
   btn_delete='Move verified originals to Recycle Bin…'; btn_delete_n='Move verified originals ({0}) to Recycle Bin…'
   chk_sub='Include subfolders'; chk_shutdown='Shut down the computer when finished'
   chk_auto='Move originals to Recycle Bin after verification'
+  lbl_version='BitShift {0}'
   hint_safety='Originals are never overwritten. Deletion goes to the Recycle Bin only, after verification.'
   lbl_to_process='To process: '; lbl_src_total='Source size: '
   lbl_saved='Saved: {0} · −{1}%'; lbl_saved_none='Saved: —'
@@ -470,6 +472,9 @@ $Codecs = @(
   [pscustomobject]@{ Key='dnxhr'; Enc='dnxhd';      OutCodec='dnxhd'; Gpu=$false; Compress=$false; Container='mov';  Tag='';     Profile='dnxhr_hqx' }
 )
 $SUFFIX = '_v2'
+# Номер версии живёт ЗДЕСЬ и показывается в карточке настроек. При сборке exe
+# передавать ps2exe тот же номер (-version '3.6.0.0'), иначе разъедется.
+$APP_VERSION = '3.6'
 $script:ModeSel = 2
 $script:CodecSel = 1     # HEVC по умолчанию: играет везде, в т.ч. на маке (у M1/M2 нет
                          # аппаратного декода AV1 — он появился только с M3)
@@ -997,6 +1002,8 @@ $xaml = @'
                           Foreground="{StaticResource Tx2}" FontSize="11.5" Margin="0,0,0,10" TextBlock.LineHeight="15"/>
                 <CheckBox x:Name="ChkShutdown" Content="Выключить компьютер после завершения"
                           Foreground="{StaticResource Tx2}" FontSize="11.5"/>
+                <Border Height="1" Background="{StaticResource Line}" Margin="0,13,0,10"/>
+                <TextBlock x:Name="LblVersion" Text="BitShift" Foreground="{StaticResource Tx3}" FontSize="11"/>
               </StackPanel>
             </Border>
           </Popup>
@@ -1131,6 +1138,7 @@ $LblMode0 = $Window.FindName('LblMode0'); $LblMode1 = $Window.FindName('LblMode1
 $LblCodec0 = $Window.FindName('LblCodec0'); $LblCodec1 = $Window.FindName('LblCodec1'); $LblCodec2 = $Window.FindName('LblCodec2')
 $LblAudio0 = $Window.FindName('LblAudio0'); $LblAudio1 = $Window.FindName('LblAudio1')
 $LnkRu = $Window.FindName('LnkRu'); $LnkEn = $Window.FindName('LnkEn')
+$LblVersion = $Window.FindName('LblVersion')
 $BtnGear = $Window.FindName('BtnGear'); $PopSettings = $Window.FindName('PopSettings')
 $GearTeeth = $Window.FindName('GearTeeth')
 $LblSettings = $Window.FindName('LblSettings'); $LblLangLabel = $Window.FindName('LblLangLabel')
@@ -1350,6 +1358,7 @@ function Apply-Language {
   if ($script:GoodSrc.Count -gt 0) { $BtnDelete.Content = ((T 'btn_delete_n') -f $script:GoodSrc.Count) }
   else { $BtnDelete.Content = T 'btn_delete' }
   $LblSettings.Text  = T 'settings'
+  $LblVersion.Text   = ((T 'lbl_version') -f $APP_VERSION)
   $LblLangLabel.Text = T 'lang_label'
   $BtnGear.ToolTip   = T 'gear_tip'
   if ($script:Lang -eq 'ru') { $LnkRu.Foreground = $ClrTx; $LnkEn.Foreground = $ClrTx2 }
