@@ -15,3 +15,15 @@ vtest*/
 
 # записка о состоянии сессии, живёт только локально
 HANDOFF.md
+
+# мак-версия: окружение и сборка
+# в mac/build и mac/dist лежат скачанные ffmpeg и ffprobe по 48 МБ —
+# GitHub блокирует файлы больше 100 МБ, а в истории они остались бы навсегда
+mac/.venv/
+mac/build/
+mac/dist/
+__pycache__/
+*.py[cod]
+
+# мусор macOS
+.DS_Store

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>BitShift — превью интерфейса</title>
+  <link rel="stylesheet" href="../ui/style.css">
+</head>
+<body>
+
+  <div class="shell">
+
+    <aside class="panel side">
+      <header class="side__head">
+        <div class="side__title">BitShift</div>
+        <div class="side__sub" id="hardware">VideoToolbox</div>
+      </header>
+
+      <div class="side__scroll">
+        <section class="group">
+          <div class="group__label" data-i18n="group_mode">Режим</div>
+          <div class="list" id="modes"></div>
+        </section>
+
+        <section class="group">
+          <div class="group__label" data-i18n="group_codec">Кодек</div>
+          <div class="list" id="codecs"></div>
+        </section>
+
+        <section class="group">
+          <div class="group__label" data-i18n="group_audio">Звук</div>
+          <div class="list" id="audio-modes"></div>
+        </section>
+      </div>
+
+      <section class="volume" id="volume">
+        <div class="group__label" data-i18n="group_volume">Объём</div>
+        <div class="volume__row">
+          <span class="volume__key" data-i18n="vol_source">Объём исходников</span>
+          <span class="volume__val" id="volume-source">—</span>
+        </div>
+        <div class="volume__row volume__row--forecast" id="volume-forecast-row" hidden>
+          <span class="volume__key" data-i18n="vol_forecast">После сжатия</span>
+          <span class="volume__val" id="volume-forecast">—</span>
+        </div>
+        <div class="volume__row volume__row--saved" id="volume-saved-row" hidden>
+          <span class="volume__key" data-i18n="vol_saved">Сэкономлено</span>
+          <span class="volume__val" id="volume-saved">—</span>
+        </div>
+      </section>
+
+      <section class="volume" id="left" hidden>
+        <div class="group__label" data-i18n="group_left">Осталось</div>
+        <div class="volume__row">
+          <span class="volume__key" data-i18n="vol_left">Примерно</span>
+          <span class="volume__val" id="volume-left">считаю…</span>
+        </div>
+      </section>
+
+      <footer class="side__foot">
+        <div class="path" id="folder-path" title="">Папка не выбрана</div>
+        <div class="side__bottom">
+          <div class="hint" data-i18n="hint_picker">В «Обзоре…» можно взять и папки, и отдельные файлы</div>
+          <button class="gear" id="btn-gear" data-i18n-title="settings_title" title="Настройки"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 5.4A2.6 2.6 0 1 0 8 10.6 2.6 2.6 0 0 0 8 5.4Zm0 4.1A1.5 1.5 0 1 1 8 6.5a1.5 1.5 0 0 1 0 3Z"/><path d="m14 9.1-.02-.16a5.7 5.7 0 0 0 0-1.88L14 6.9l1-.86-1-1.73-1.26.42-.13-.1a5.7 5.7 0 0 0-1.62-.94l-.14-.05L10.6 2.3H8.6l-.25 1.34-.14.05a5.7 5.7 0 0 0-1.62.94l-.13.1L5.2 4.31l-1 1.73.99.86-.02.17a5.7 5.7 0 0 0 0 1.88l.02.16-1 .86 1 1.73 1.26-.42.13.1c.5.4 1.04.72 1.62.94l.14.05.25 1.34h2l.25-1.34.14-.05a5.7 5.7 0 0 0 1.62-.94l.13-.1 1.26.42 1-1.73-1-.86Z"/></svg></button>
+        </div>
+      </footer>
+    </aside>
+
+    <main class="panel main">
+      <header class="main__head">
+        <div class="main__titles">
+          <h1 class="main__title" id="folder-name">Выберите папку</h1>
+          <div class="main__meta" id="folder-meta">—</div>
+        </div>
+        <div class="main__actions">
+          <label class="check check--pill" id="recursive-pill">
+            <input type="checkbox" id="opt-recursive">
+            <span class="check__box"></span>
+            <span class="check__text" data-i18n="opt_recursive">Подпапки</span>
+          </label>
+          <button class="btn btn--ghost" id="btn-browse" data-i18n="btn_browse">Обзор…</button>
+          <button class="btn btn--ghost" id="btn-refresh" data-i18n="btn_refresh" disabled>Обновить</button>
+        </div>
+      </header>
+
+      <div class="files" id="files">
+        <div class="empty" id="empty">
+          <div class="empty__title">Ничего не выбрано</div>
+          <div class="empty__text">Нажмите «Обзор…» и укажите папку с исходниками.</div>
+        </div>
+      </div>
+
+      <footer class="main__foot">
+        <div class="progress">
+          <div class="progress__track"><div class="progress__fill" id="progress-fill"></div></div>
+        </div>
+        <div class="summary" id="summary">Готов к работе</div>
+
+        <div class="shutdown" id="shutdown" hidden>
+          <span class="shutdown__text" id="shutdown-text"></span>
+          <button class="btn" id="btn-cancel-shutdown" data-i18n="btn_cancel_shutdown">Не выключать</button>
+        </div>
+
+        <div class="controls">
+          <button class="btn btn--primary" id="btn-start" data-i18n="btn_start" disabled>Старт</button>
+          <button class="btn" id="btn-pause" disabled>Пауза</button>
+          <button class="btn" id="btn-stop" disabled>Стоп</button>
+          <button class="btn btn--danger" id="btn-trash" disabled>Удалить проверенные в Корзину…</button>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <div class="settings" id="settings" hidden>
+    <div class="settings__card">
+      <div class="settings__title" data-i18n="settings_title">Настройки</div>
+
+      <div class="settings__row">
+        <span class="settings__key" data-i18n="settings_lang">Язык</span>
+        <div class="seg" id="lang-list"></div>
+      </div>
+
+      <label class="check">
+        <input type="checkbox" id="opt-shutdown">
+        <span class="check__box"></span>
+        <span class="check__text" data-i18n="opt_shutdown">Выключить мак после конвертации</span>
+      </label>
+
+      <label class="check check--danger">
+        <input type="checkbox" id="opt-trash">
+        <span class="check__box"></span>
+        <span class="check__text" data-i18n="opt_trash">Удалять исходники в Корзину после проверки</span>
+      </label>
+
+      <div class="settings__foot">
+        <span class="settings__version">BitShift <span id="app-version">—</span></span>
+        <button class="btn" id="settings-close" data-i18n="btn_close">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal" hidden>
+    <div class="modal__card">
+      <div class="modal__title" id="modal-title">Удалить в Корзину?</div>
+      <div class="modal__text" id="modal-text"></div>
+      <div class="modal__actions">
+        <button class="btn" id="modal-cancel" data-i18n="btn_cancel">Отмена</button>
+        <button class="btn btn--danger" id="modal-ok" data-i18n="btn_to_trash">В Корзину</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+
+    const FILES = [
+      ['08 Съёмка A/C0024.MP4',    '544 МБ', 'оригинал в Корзине', 0, '→ HEVC · 117 МБ · −79%'],
+      ['08 Съёмка A/C0025.MP4',    '3 ГБ',   'оригинал в Корзине', 0, '→ HEVC · 662 МБ · −79%'],
+      ['08 Съёмка A/C0008.MP4',    '11,8 ГБ','кодирую',          0.46,'h264 3840×2160 25fps yuv420p · 102.9 → 19.9 Мбит/с'],
+      ['08 Съёмка A/C0002.MP4',    '2,7 ГБ', 'проверяю',         0.62,'h264 3840×2160 25fps yuv420p · 98.1 → 19.9 Мбит/с'],
+      ['08 Съёмка A/C0004.MP4',    '440 МБ', 'переношу',         0.35,'→ HEVC · 92 МБ · −79%'],
+      ['09 Съёмка B/C0008.MP4', '2 ГБ',   'готово',            0,  '→ HEVC · 435 МБ · −79%'],
+      ['09 Съёмка B/C0013.MP4', '1,5 ГБ', 'кодирую',          0.70,'h264 3840×2160 25fps yuv420p · 99.4 → 19.9 Мбит/с'],
+      ['09 Съёмка B/C0014.MP4', '2,9 ГБ', 'жду проверки',      0,  'h264 3840×2160 25fps yuv420p · 97.7 → 19.9 Мбит/с'],
+      ['09 Съёмка B/C0015.MP4', '356 МБ', 'копирую на SSD',   0.28,'h264 3840×2160 25fps yuv420p · 96.2 → 19.9 Мбит/с'],
+      ['09 Съёмка B/C0016.MP4', '1,1 ГБ', 'жду слот кодирования', 0, 'h264 3840×2160 25fps yuv420p · 95.0 → 19.9 Мбит/с'],
+      ['09 Съёмка B/C0019.MP4', '820 МБ', 'брак',              0,  'кодирование не удалось: [aac] Unsupported channel layout "9.1.6"'],
+      ['09 Съёмка B/C0021.MP4', '1,2 ГБ', 'остановлено',       0,  'остановлено, файл не переделан'],
+      ['09 Съёмка B/мелочь.mp4','113 КБ', 'пропущен',          0,  'h264 640×480 30fps yuv420p'],
+    ];
+
+    const STATE_KEYS = {
+      'ожидание': 'waiting', 'пропущен': 'skipped', 'жду слот кодирования': 'queued',
+      'копирую на SSD': 'copying', 'кодирую': 'encoding', 'жду проверки': 'encoded',
+      'проверяю': 'verifying', 'проверен — жду переноса': 'verified',
+      'переношу': 'moving', 'готово': 'done', 'оригинал в Корзине': 'trashed',
+      'брак': 'failed', 'остановлено': 'stopped',
+    };
+
+    const STATE = {
+      hardware: 'Apple M1 Pro · VideoToolbox',
+      modes: [
+        { key: 'old',  name: 'Старое видео',          hint: 'Берёт файлы: avi, wmv, mts' },
+        { key: 'slog', name: 'Съёмка с камеры',          hint: 'Берёт файлы: mp4, mov' },
+        { key: 'arc',  name: 'Обычное видео', hint: 'Берёт файлы: mp4, mov' },
+      ],
+      codecs: [
+        { key: 'av1',    name: 'AV1',           note: '−20% к HEVC',
+          hint: 'Считается на процессоре — аппаратного AV1 у M1 Pro нет.' },
+        { key: 'hevc',   name: 'HEVC',          note: 'совместимый' },
+        { key: 'prores', name: 'ProRes 422 HQ', note: 'грейдинг' },
+      ],
+      audio_modes: [
+        { key: 'original', name: 'Оригинал',   note: 'все каналы',
+          hint: 'Звук копируется как есть: все дорожки, все каналы.' },
+        { key: 'aac',      name: 'AAC стерео', note: 'компактно',
+          hint: 'Сводится в стерео AAC 256 кбит/с — лишние каналы теряются.' },
+      ],
+      mode: 'arc',
+      codec: 'hevc',
+      audio: 'aac',
+      folder: '/Volumes/Архив/Концерты/08 Съёмка A\n/Volumes/Архив/Концерты/09 Съёмка B',
+      folder_short: '…/Концерты/08 Съёмка A и ещё 1',
+      folder_name: '08 Съёмка A и ещё 1',
+      folder_meta: '12 файлов · папок 2 · кодек HEVC · 1 пропущено',
+      recursive: true,
+      shutdown_after: true,
+      shutdown_in: 108,
+      shutdown_error: '',
+      trash: true,
+      trash_available: true,
+      running: true,
+      paused: false,
+      files: FILES.map(([label, size, state, progress, detail], i) => ({
+        path: `/tmp/${i}`, label, detail, size_text: size, state,
+        state_key: STATE_KEYS[state] || 'waiting',
+        state_label: state,
+        message: state === 'брак' ? 'кодирование не удалось: [aac] Unsupported channel layout "9.1.6"' : '',
+
+        progress, selected: state !== 'пропущен', skipped: state === 'пропущен',
+      })),
+      stopping: false,
+      selected_count: 11,
+      can_start: true,
+      source_text: '78,1 ГБ',
+      saved_text: '43,4 ГБ · −79%',
+      left_text: '~1 ч 30 мин',
+      percent: 0.74,
+      summary: '74% · кодирование 28/36 (в работе 3) · проверено 24 · брак 1',
+      trashable: 11,
+      lang: 'ru',
+      version: '1.0',
+      languages: [{ key: 'ru', name: 'Русский' }, { key: 'en', name: 'English' }],
+      forecast_text: '~13,6 ГБ · −83%',
+      files_only: false,
+    };
+
+    window.pywebview = {
+      api: new Proxy({}, {
+        get: () => (...args) => {
+          console.log('вызов ядра:', args);
+          return Promise.resolve(STATE);
+        },
+      }),
+    };
+  </script>
+  <script src="../ui/app.js?v=3"></script>
+  <script>window.applyState(STATE);</script>
+</body>
+</html>

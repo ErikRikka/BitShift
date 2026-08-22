@@ -1,0 +1,23 @@
+#!/bin/zsh
+
+set -e
+
+exe_dir="${0:A:h}"
+project="${exe_dir:h:h:h}"
+
+py="$project/.venv/bin/python"
+app="$project/app.py"
+
+fail() {
+  /usr/bin/osascript -e "display alert \"BitShift\" message \"$1\" as critical" >/dev/null 2>&1
+  exit 1
+}
+
+[[ -x "$py" ]] || fail "Не найдено окружение .venv рядом с приложением. Папку проекта нельзя переносить отдельно от .app. Ожидался путь: $py"
+[[ -f "$app" ]] || fail "Не найден app.py. Ожидался путь: $app"
+
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+command -v ffmpeg >/dev/null 2>&1 || fail "Не найден ffmpeg. Установите его в Терминале: brew install ffmpeg"
+
+cd "$project"
+exec "$py" "$app"

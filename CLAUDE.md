@@ -1,6 +1,11 @@
-# CLAUDE.md — Конвертер HEVC (Windows)
+# CLAUDE.md — BitShift для Windows
 
 Гайд для Claude Code по этому проекту. Читай целиком перед любыми правками.
+
+> **В репозитории две независимые версии.** Этот файл — про **Windows** (PowerShell + WPF,
+> NVENC). Мак-версия живёт в `mac/` (Python + HTML, VideoToolbox), у неё свой
+> `mac/CLAUDE.md` — общего кода нет ни строки, правки сюда её не касаются.
+> Что переносить с Windows на мак — в `docs-mac-port.md`.
 
 ## 1. Что это
 
