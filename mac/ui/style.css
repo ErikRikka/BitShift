@@ -24,9 +24,9 @@
   --stage-verify: #A99BF0;
   --stage-move: #7FB2EE;
 
-  --glass-blur: 22px;
-  --glass-rail: rgba(20, 20, 24, 0.78);
-  --glass-content: rgba(23, 23, 27, 0.72);
+  --glass-blur: 26px;
+  --glass-rail: rgba(20, 20, 24, 0.76);
+  --glass-content: rgba(23, 23, 27, 0.70);
 
   --radius-row: 11px;
   --radius-sidebar: 17px;
@@ -72,9 +72,9 @@ body {
 
 .side,
 .main {
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .side { background: var(--glass-rail); }

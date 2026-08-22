@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 APP_NAME = "BitShift"
-APP_VERSION = "3.7"
+APP_VERSION = "3.7.1"
 BUNDLED_TOOLS_SUBDIR = "bin"
 ICON_NAME = "icon.icns"
 
@@ -87,6 +87,7 @@ WINDOW_HEIGHT = 760
 WINDOW_MIN_SIZE = (880, 620)
 WINDOW_BACKGROUND = "#0A0A0C"
 WINDOW_GLASS = True
+GLASS_MATERIAL = "UnderWindowBackground"
 WINDOW_PUSH_INTERVAL = 0.2
 
 NS_FULL_SIZE_CONTENT_VIEW = 1 << 15

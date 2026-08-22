@@ -138,8 +138,29 @@ def case_forecast_matches_reality(work: Path) -> list[str]:
     return problems
 
 
+CYRILLIC = set("абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ")
+
+
+def case_picker_is_translated(work: Path) -> list[str]:
+    from core.lang import t as tr
+
+    problems: list[str] = []
+    for key, expected_ru in (("picker_prompt", "Выбрать"),
+                             ("picker_message", "Выберите папки и файлы")):
+        ru = tr("ru", key)
+        en = tr("en", key)
+        if ru != expected_ru:
+            problems.append(f"по-русски «{key}» = «{ru}», ждали «{expected_ru}»")
+        if en == key:
+            problems.append(f"нет английского перевода для «{key}»")
+        if CYRILLIC & set(en):
+            problems.append(f"в английском «{key}» осталась кириллица: «{en}»")
+    return problems
+
+
 def main() -> int:
     cases = [
+        ("диалог выбора говорит на своём языке", case_picker_is_translated),
         ("папка целиком плюс отдельные файлы", case_folder_plus_files),
         ("файл чужого режима виден строкой", case_wrong_mode_is_visible),
         ("умолчания как в брифе части 2", case_defaults_match_brief),

@@ -42,6 +42,7 @@ from core.config import (
     PROGRESS_WEIGHT_ENCODING,
     SHUTDOWN_COMMAND,
     SHUTDOWN_DELAY,
+    GLASS_MATERIAL,
     WINDOW_BACKGROUND,
     WINDOW_GLASS,
     WINDOW_HEIGHT,
@@ -87,8 +88,6 @@ def hardware_name(codec: Codec | None, lang: str) -> str:
     return f"{chip} · {engine}" if chip else engine
 
 
-PICKER_MESSAGE = "Выберите папки и файлы"
-PICKER_PROMPT = "Взять"
 
 
 def all_source_extensions() -> list[str]:
@@ -510,8 +509,8 @@ class Api:
                 panel.setCanChooseDirectories_(True)
                 panel.setAllowsMultipleSelection_(True)
                 panel.setAllowedFileTypes_(all_source_extensions())
-                panel.setMessage_(PICKER_MESSAGE)
-                panel.setPrompt_(PICKER_PROMPT)
+                panel.setMessage_(self._t("picker_message"))
+                panel.setPrompt_(self._t("picker_prompt"))
                 if panel.runModal() == AppKit.NSModalResponseOK:
                     picked.extend(str(url.path()) for url in panel.URLs())
             finally:
@@ -714,6 +713,48 @@ def apply_dock_identity() -> None:
     AppHelper.callAfter(put)
 
 
+def apply_glass(window: webview.Window) -> None:
+    if not WINDOW_GLASS:
+        return
+    native = getattr(window, "native", None)
+    if native is None:
+        return
+
+    def put() -> None:
+        try:
+            content = native.contentView()
+            web = next(
+                (v for v in content.subviews()
+                 if v.__class__.__name__.startswith("WKWebView")),
+                None,
+            )
+            if web is None:
+                return
+            if any(v.__class__.__name__ == "NSVisualEffectView"
+                   for v in content.subviews()):
+                return
+
+            effect = AppKit.NSVisualEffectView.alloc().initWithFrame_(content.bounds())
+            effect.setAutoresizingMask_(
+                AppKit.NSViewWidthSizable | AppKit.NSViewHeightSizable
+            )
+            material = getattr(
+                AppKit, f"NSVisualEffectMaterial{GLASS_MATERIAL}", None
+            )
+            if material is not None:
+                effect.setMaterial_(material)
+            effect.setState_(AppKit.NSVisualEffectStateActive)
+            effect.setBlendingMode_(AppKit.NSVisualEffectBlendingModeBehindWindow)
+            content.addSubview_positioned_relativeTo_(
+                effect, AppKit.NSWindowBelow, web
+            )
+            native.setHasShadow_(True)
+        except Exception:
+            pass
+
+    AppHelper.callAfter(put)
+
+
 def apply_native_titlebar(window: webview.Window) -> None:
     native = None
     for _ in range(60):
@@ -757,10 +798,10 @@ def main() -> int:
         min_size=WINDOW_MIN_SIZE,
         background_color=WINDOW_BACKGROUND,
         transparent=WINDOW_GLASS,
-        vibrancy=WINDOW_GLASS,
     )
     api.attach(window)
     window.events.shown += lambda: apply_native_titlebar(window)
+    window.events.shown += lambda: apply_glass(window)
     window.events.shown += apply_dock_identity
     webview.start(apply_native_titlebar, window)
     api._stop_caffeinate()

@@ -105,6 +105,12 @@ STRINGS: dict[str, dict[str, str]] = {
 
     "engine_cpu": {"ru": "кодирует процессор", "en": "CPU encoding"},
 
+    "picker_message": {
+        "ru": "Выберите папки и файлы",
+        "en": "Choose folders and files",
+    },
+    "picker_prompt": {"ru": "Выбрать", "en": "Choose"},
+
     "eta_calculating": {"ru": "считаю…", "en": "calculating…"},
     "eta_finishing": {"ru": "завершаем…", "en": "finishing…"},
     "eta_under_minute": {"ru": "меньше минуты", "en": "under a minute"},
