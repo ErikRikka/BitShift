@@ -42,7 +42,9 @@ from core.config import (
     PROGRESS_WEIGHT_ENCODING,
     SHUTDOWN_COMMAND,
     SHUTDOWN_DELAY,
+    GLASS_ATTEMPTS,
     GLASS_MATERIAL,
+    GLASS_RETRY_DELAY,
     WINDOW_BACKGROUND,
     WINDOW_GLASS,
     WINDOW_HEIGHT,
@@ -713,28 +715,40 @@ def apply_dock_identity() -> None:
     AppHelper.callAfter(put)
 
 
+def note_to_log(text: str) -> None:
+    try:
+        LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with LOG_PATH.open("a", encoding="utf-8") as f:
+            f.write(f"{datetime.now():%Y-%m-%d %H:%M:%S}  {text}\n")
+    except OSError:
+        pass
+
+
 def apply_glass(window: webview.Window) -> None:
     if not WINDOW_GLASS:
         return
     native = getattr(window, "native", None)
     if native is None:
+        note_to_log("стекло: окна ещё нет, слой не поставлен")
         return
 
-    def put() -> None:
+    def put(left: int = GLASS_ATTEMPTS) -> None:
         try:
-            content = native.contentView()
-            web = next(
-                (v for v in content.subviews()
-                 if v.__class__.__name__.startswith("WKWebView")),
-                None,
-            )
-            if web is None:
+            host = native.contentView()
+            below = next(iter(host.subviews()), None)
+            if below is None:
+                if left > 0:
+                    AppHelper.callLater(GLASS_RETRY_DELAY, put, left - 1)
+                else:
+                    note_to_log(
+                        f"стекло: за {GLASS_ATTEMPTS} попыток webview так и не появился"
+                    )
                 return
             if any(v.__class__.__name__ == "NSVisualEffectView"
-                   for v in content.subviews()):
+                   for v in host.subviews()):
                 return
 
-            effect = AppKit.NSVisualEffectView.alloc().initWithFrame_(content.bounds())
+            effect = AppKit.NSVisualEffectView.alloc().initWithFrame_(host.bounds())
             effect.setAutoresizingMask_(
                 AppKit.NSViewWidthSizable | AppKit.NSViewHeightSizable
             )
@@ -745,12 +759,16 @@ def apply_glass(window: webview.Window) -> None:
                 effect.setMaterial_(material)
             effect.setState_(AppKit.NSVisualEffectStateActive)
             effect.setBlendingMode_(AppKit.NSVisualEffectBlendingModeBehindWindow)
-            content.addSubview_positioned_relativeTo_(
-                effect, AppKit.NSWindowBelow, web
+            host.addSubview_positioned_relativeTo_(
+                effect, AppKit.NSWindowBelow, below
             )
             native.setHasShadow_(True)
-        except Exception:
-            pass
+
+            placed = any(v.__class__.__name__ == "NSVisualEffectView"
+                         for v in host.subviews())
+            note_to_log(f"стекло: слой {'поставлен' if placed else 'НЕ поставлен'}")
+        except Exception as exc:
+            note_to_log(f"стекло: не вышло ({exc})")
 
     AppHelper.callAfter(put)
 

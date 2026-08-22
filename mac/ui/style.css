@@ -24,7 +24,6 @@
   --stage-verify: #A99BF0;
   --stage-move: #7FB2EE;
 
-  --glass-blur: 26px;
   --glass-rail: rgba(20, 20, 24, 0.94);
   --glass-content: rgba(23, 23, 27, 0.925);
 
@@ -72,8 +71,6 @@ body {
 
 .side,
 .main {
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
