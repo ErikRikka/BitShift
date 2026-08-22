@@ -38,38 +38,39 @@ def parse_args() -> argparse.Namespace:
         help="папка с исходниками (можно несколько — обойдём все)",
     )
     parser.add_argument(
-        "--режим", dest="mode", default=DEFAULT_MODE, choices=[m.key for m in MODES],
+        "--режим", "--mode", dest="mode", default=DEFAULT_MODE, choices=[m.key for m in MODES],
         help=f"профиль обработки (по умолчанию {DEFAULT_MODE})",
     )
     parser.add_argument(
-        "--кодек", dest="codec", default=DEFAULT_CODEC, choices=list(CODECS),
+        "--кодек", "--codec", dest="codec", default=DEFAULT_CODEC, choices=list(CODECS),
         help="целевой кодек (по умолчанию hevc)",
     )
     parser.add_argument(
-        "--звук", dest="audio", default=DEFAULT_AUDIO,
+        "--звук", "--audio", dest="audio", default=DEFAULT_AUDIO,
         choices=[a.key for a in AUDIO_MODES],
         help="aac — свести в стерео AAC 256k (по умолчанию); "
              "original — копировать как есть, все каналы",
     )
     parser.add_argument(
-        "--без-подпапок", dest="recursive", action="store_false",
+        "--без-подпапок", "--no-subfolders", dest="recursive", action="store_false",
         default=DEFAULT_RECURSIVE,
         help="не заходить во вложенные папки (по умолчанию заходим)",
     )
     parser.add_argument(
-        "--потоков", dest="jobs", type=int, default=JOBS_DEFAULT,
+        "--потоков", "--jobs", dest="jobs", type=int, default=JOBS_DEFAULT,
         help="параллельных кодирований (по умолчанию 2; на M1 Pro больше не ускоряет)",
     )
     parser.add_argument(
-        "--кэш", dest="staging", choices=["авто", "да", "нет"], default="авто",
+        "--кэш", "--cache", dest="staging",
+        choices=["авто", "да", "нет", "auto", "yes", "no"], default="авто",
         help="кэшировать на быстрый диск (по умолчанию — решать по типу тома)",
     )
     parser.add_argument(
-        "--в-корзину", dest="trash", action="store_true",
+        "--в-корзину", "--to-trash", dest="trash", action="store_true",
         help="🔒 удалять проверенные оригиналы в Корзину (по умолчанию выключено)",
     )
     parser.add_argument(
-        "--список", dest="dry_run", action="store_true",
+        "--список", "--dry-run", dest="dry_run", action="store_true",
         help="только показать, что будет сделано, и выйти",
     )
     return parser.parse_args()
@@ -85,7 +86,8 @@ def main() -> int:
             return 2
     folder = folders[0]
 
-    staging = {"авто": None, "да": True, "нет": False}[args.staging]
+    staging = {"авто": None, "да": True, "нет": False,
+               "auto": None, "yes": True, "no": False}[args.staging]
     settings = Settings(
         mode=MODES_BY_KEY[args.mode],
         codec=CODECS[args.codec],

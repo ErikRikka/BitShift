@@ -102,9 +102,9 @@ def main() -> int:
     print(f"плитка найдена: x={bounds[0]} y={bounds[1]} {bounds[2]}×{bounds[3]}")
 
     canvas = render(rep, bounds)
-    work = ROOT / "build" / "иконка"
+    work = ROOT / "build" / "icon"
     work.mkdir(parents=True, exist_ok=True)
-    master = work / "мастер.png"
+    master = work / "master.png"
     write_png(canvas, master)
 
     iconset = work / "icon.iconset"

@@ -36,18 +36,18 @@ REQUIRED_ENCODERS = (
 )
 
 
-def сообщить(text: str) -> None:
+def say(text: str) -> None:
     print(text, flush=True)
 
 
-def скачать_инструменты() -> None:
+def fetch_tools() -> None:
     TOOLS.mkdir(parents=True, exist_ok=True)
     for name, url in TOOL_SOURCES.items():
         target = TOOLS / name
         if target.is_file():
-            сообщить(f"  {name}: уже скачан")
+            say(f"  {name}: уже скачан")
             continue
-        сообщить(f"  {name}: качаю…")
+        say(f"  {name}: качаю…")
         archive = BUILD / f"{name}.zip"
         urllib.request.urlretrieve(url, archive)
         with zipfile.ZipFile(archive) as zf:
@@ -76,7 +76,7 @@ def скачать_инструменты() -> None:
                        capture_output=True)
 
 
-def проверить_инструменты() -> None:
+def check_tools() -> None:
     for name in TOOL_SOURCES:
         path = TOOLS / name
         arch = subprocess.run(["lipo", "-archs", str(path)],
@@ -87,7 +87,7 @@ def проверить_инструменты() -> None:
                                  capture_output=True, text=True)
         if version.returncode != 0:
             sys.exit(f"{name} не запускается: {version.stderr[:200]}")
-        сообщить(f"  {name}: arm64, {version.stdout.splitlines()[0][:40]}")
+        say(f"  {name}: arm64, {version.stdout.splitlines()[0][:40]}")
 
     for encoder in REQUIRED_ENCODERS:
         check = subprocess.run([str(TOOLS / "ffmpeg"), "-hide_banner",
@@ -95,17 +95,17 @@ def проверить_инструменты() -> None:
                                capture_output=True, text=True)
         if check.returncode != 0 or "Encoder " not in check.stdout:
             sys.exit(f"во встроенном ffmpeg нет энкодера {encoder}")
-    сообщить(f"  энкодеры на месте: {', '.join(REQUIRED_ENCODERS)}")
+    say(f"  энкодеры на месте: {', '.join(REQUIRED_ENCODERS)}")
 
 
-def собрать_иконку() -> None:
+def make_icon() -> None:
     icns = BUILD / "icon.icns"
-    subprocess.run([sys.executable, str(ROOT / "иконка.py"), str(icns)],
+    subprocess.run([sys.executable, str(ROOT / "icon.py"), str(icns)],
                    check=True, capture_output=True)
-    сообщить("  иконка: собрана из bitshift-source.png")
+    say("  иконка: собрана из bitshift-source.png")
 
 
-def собрать_бандл() -> Path:
+def make_bundle() -> Path:
     shutil.rmtree(DIST, ignore_errors=True)
     shutil.rmtree(ROOT / "build" / "bdist.macosx", ignore_errors=True)
     result = subprocess.run([sys.executable, str(ROOT / "setup.py"), "py2app"],
@@ -120,7 +120,7 @@ def собрать_бандл() -> Path:
     return app
 
 
-def проверить_бандл(app: Path) -> None:
+def check_bundle(app: Path) -> None:
     ffmpeg = app / "Contents" / "Resources" / BUNDLED_TOOLS_SUBDIR / "ffmpeg"
     index = app / "Contents" / "Resources" / "ui" / "index.html"
     launcher = app / "Contents" / "MacOS" / APP_NAME
@@ -137,26 +137,26 @@ def проверить_бандл(app: Path) -> None:
 
     size = subprocess.run(["du", "-sh", str(app)], capture_output=True,
                           text=True).stdout.split()[0]
-    сообщить(f"  всё на месте, размер {size}")
+    say(f"  всё на месте, размер {size}")
 
 
 def main() -> int:
     BUILD.mkdir(exist_ok=True)
 
-    сообщить("Инструменты:")
-    скачать_инструменты()
-    проверить_инструменты()
+    say("Инструменты:")
+    fetch_tools()
+    check_tools()
 
-    сообщить("Иконка:")
-    собрать_иконку()
+    say("Иконка:")
+    make_icon()
 
-    сообщить("Сборка:")
-    app = собрать_бандл()
+    say("Сборка:")
+    app = make_bundle()
 
-    сообщить("Проверка:")
-    проверить_бандл(app)
+    say("Проверка:")
+    check_bundle(app)
 
-    сообщить(f"\nГотово: {app}")
+    say(f"\nГотово: {app}")
     return 0
 
 

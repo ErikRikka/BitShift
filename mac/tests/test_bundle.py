@@ -63,7 +63,7 @@ def case_source_run_uses_system_tools(_work: Path) -> list[str]:
 
 def case_built_bundle_is_complete(_work: Path) -> list[str]:
     if not BUNDLE.is_dir():
-        print("    бандл не собран, пропускаю (собрать: python3 сборка.py)")
+        print("    бандл не собран, пропускаю (собрать: python3 build.py)")
         return []
 
     resources = BUNDLE / "Contents" / "Resources"
