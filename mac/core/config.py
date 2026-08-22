@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 APP_NAME = "BitShift"
-APP_VERSION = "3.7.3"
+APP_VERSION = "3.7.4"
 BUNDLED_TOOLS_SUBDIR = "bin"
 ICON_NAME = "icon.icns"
 
