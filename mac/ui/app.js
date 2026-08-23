@@ -20,6 +20,8 @@ const UI = {
   btn_resume: { ru: 'Продолжить', en: 'Resume' },
   btn_stop: { ru: 'Стоп', en: 'Stop' },
   btn_stopping: { ru: 'Останавливаю…', en: 'Stopping…' },
+  btn_encoding: { ru: 'Кодирую {percent}%', en: 'Encoding {percent}%' },
+  btn_paused: { ru: 'На паузе', en: 'Paused' },
   btn_cancel: { ru: 'Отмена', en: 'Cancel' },
   btn_close: { ru: 'Закрыть', en: 'Close' },
   btn_to_trash: { ru: 'В Корзину', en: 'Move to Trash' },
@@ -113,24 +115,6 @@ function badgeText(file) {
   return label;
 }
 
-const ICONS = {
-  old: '<path d="M2 5h11M2 5v7.5a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V5M5.5 2h4M5.5 5v8.5M9.5 5v8.5"/>',
-  slog: '<path d="M1.5 4.5h8a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1Z"/><path d="m10.5 8 4-2.5v5L10.5 8Z"/>',
-  arc: '<path d="M2 6.5 7.5 2 13 6.5"/><path d="M3.5 7.5v5a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-5"/>',
-  av1: '<path d="M6 2.5 3 5.5l3 3"/><path d="M9 6.5l3 3-3 3"/><path d="M3.5 5.5h9"/><path d="M2.5 9.5h9"/>',
-  original: '<path d="M2 6v3M4.5 4v7M7 2.5v10M9.5 4.5v6M12 6.5v2"/>',
-  aac: '<path d="M2.5 6.5v2M5 4.5v6"/><path d="M8 3.5a4.5 4.5 0 0 1 0 8"/><path d="M10.5 5.5a2.2 2.2 0 0 1 0 4"/>',
-  hevc: '<path d="M7.5 1.5 13.5 5l-6 3.5L1.5 5l6-3.5Z"/><path d="m1.5 9 6 3.5L13.5 9"/>',
-  prores: '<path d="M2.5 3.5h10M2.5 7.5h10M2.5 11.5h10"/><circle cx="5.5" cy="3.5" r="1.6"/><circle cx="9.5" cy="7.5" r="1.6"/><circle cx="4.5" cy="11.5" r="1.6"/>',
-};
-
-function iconSvg(key) {
-  const body = ICONS[key];
-  if (!body) return '';
-  return `<svg class="item__icon" viewBox="0 0 15 15" fill="none" stroke="currentColor"
-    stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
-}
-
 function renderChoiceList(host, items, currentKey, onPick) {
   host.textContent = '';
   for (const item of items) {
@@ -138,8 +122,7 @@ function renderChoiceList(host, items, currentKey, onPick) {
     el.className = 'item' + (item.key === currentKey ? ' item--on' : '')
       + (item.available === false ? ' item--off' : '');
     el.title = item.hint || item.note || '';
-    el.innerHTML = iconSvg(item.key)
-      + `<span class="item__name">${escapeHtml(item.name)}</span>`
+    el.innerHTML = `<span class="item__name">${escapeHtml(item.name)}</span>`
       + (item.note ? `<span class="item__note">${escapeHtml(item.note)}</span>` : '');
     if (item.available !== false) {
       el.addEventListener('click', () => onPick(item.key));
@@ -278,7 +261,7 @@ function render() {
 
   $('btn-browse').disabled = state.running;
   $('btn-refresh').disabled = state.running || !state.folder;
-  $('btn-start').disabled = state.running || !state.can_start;
+  renderStartButton();
 
   $('btn-pause').disabled = !state.running || state.stopping;
   $('btn-pause').textContent = state.paused ? ui('btn_resume') : ui('btn_pause');
@@ -293,6 +276,24 @@ function render() {
   $('app-version').textContent = state.version || '';
   renderLanguages();
 }
+
+function renderStartButton() {
+  const btn = $('btn-start');
+  btn.disabled = state.running || !state.can_start;
+  const working = state.running && !state.paused && !state.stopping;
+  btn.classList.toggle('btn--working', working);
+  if (working) {
+    btn.innerHTML = '<span class="btn__spin"></span>'
+      + escapeHtml(ui('btn_encoding', { percent: Math.round(state.percent * 100) }));
+  } else if (state.stopping) {
+    btn.textContent = ui('btn_stopping');
+  } else if (state.running) {
+    btn.textContent = ui('btn_paused');
+  } else {
+    btn.textContent = ui('btn_start');
+  }
+}
+
 
 function clockText(seconds) {
   const m = Math.floor(seconds / 60);
