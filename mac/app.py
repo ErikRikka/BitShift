@@ -611,7 +611,7 @@ class Api:
             if result.ok:
                 job.state = State.TRASHED
             else:
-                job.message = f"в Корзину не ушёл: {result.error}"
+                job.message = self._t("trash_failed", error=result.error)
         return self.get_state()
 
 
@@ -620,12 +620,7 @@ class Api:
         with self._lock:
             self.log_lines.append(line)
             del self.log_lines[:-LOG_KEEP]
-        try:
-            LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-            with LOG_PATH.open("a", encoding="utf-8") as f:
-                f.write(f"{datetime.now():%Y-%m-%d %H:%M:%S}  {text}\n")
-        except OSError:
-            pass
+        note_to_log(text)
 
 
     def shutdown_left(self) -> int | None:
@@ -665,7 +660,7 @@ class Api:
             if proc.returncode != 0:
                 self._shutdown_error = (
                     (proc.stderr or "").strip()[:200]
-                    or "система не дала команду на выключение"
+                    or self._t("shutdown_no_command")
                 )
         if self._shutdown_error:
             self._start_caffeinate()
@@ -710,8 +705,8 @@ def apply_dock_identity() -> None:
             image = AppKit.NSImage.alloc().initWithContentsOfFile_(str(icon))
             if image is not None:
                 AppKit.NSApplication.sharedApplication().setApplicationIconImage_(image)
-        except Exception:
-            pass
+        except Exception as exc:
+            note_to_log(f"значок в доке: не вышло ({exc})")
     AppHelper.callAfter(put)
 
 
@@ -724,12 +719,34 @@ def note_to_log(text: str) -> None:
         pass
 
 
+def wait_for_native(window: webview.Window):
+    for _ in range(60):
+        native = getattr(window, "native", None)
+        if native is not None:
+            return native
+        time.sleep(0.05)
+    return None
+
+
+def apply_dark_appearance() -> None:
+    def put() -> None:
+        try:
+            dark = AppKit.NSAppearance.appearanceNamed_(
+                AppKit.NSAppearanceNameDarkAqua
+            )
+            AppKit.NSApplication.sharedApplication().setAppearance_(dark)
+        except Exception as exc:
+            note_to_log(f"тёмный вид: не вышло ({exc})")
+
+    AppHelper.callAfter(put)
+
+
 def apply_glass(window: webview.Window) -> None:
     if not WINDOW_GLASS:
         return
-    native = getattr(window, "native", None)
+    native = wait_for_native(window)
     if native is None:
-        note_to_log("стекло: окна ещё нет, слой не поставлен")
+        note_to_log("стекло: окна так и не появилось, слой не поставлен")
         return
 
     def put(left: int = GLASS_ATTEMPTS) -> None:
@@ -757,6 +774,10 @@ def apply_glass(window: webview.Window) -> None:
             )
             if material is not None:
                 effect.setMaterial_(material)
+            else:
+                note_to_log(
+                    f"стекло: материала {GLASS_MATERIAL} нет, оставил стандартный"
+                )
             effect.setState_(AppKit.NSVisualEffectStateActive)
             effect.setBlendingMode_(AppKit.NSVisualEffectBlendingModeBehindWindow)
             host.addSubview_positioned_relativeTo_(
@@ -774,13 +795,9 @@ def apply_glass(window: webview.Window) -> None:
 
 
 def apply_native_titlebar(window: webview.Window) -> None:
-    native = None
-    for _ in range(60):
-        native = getattr(window, "native", None)
-        if native is not None:
-            break
-        time.sleep(0.05)
+    native = wait_for_native(window)
     if native is None:
+        note_to_log("шапка: окна так и не появилось")
         return
 
     def apply() -> None:
@@ -798,8 +815,8 @@ def apply_native_titlebar(window: webview.Window) -> None:
             strip = native.contentView().superview().subviews().lastObject()
             strip.setBackgroundColor_(AppKit.NSColor.clearColor())
 
-        except Exception:
-            pass
+        except Exception as exc:
+            note_to_log(f"шапка: не вышло ({exc})")
 
     AppHelper.callAfter(apply)
 
@@ -818,9 +835,14 @@ def main() -> int:
         transparent=WINDOW_GLASS,
     )
     api.attach(window)
+    if not WINDOW_GLASS:
+        window.events.loaded += lambda: window.evaluate_js(
+            f"document.body.style.background = {json.dumps(WINDOW_BACKGROUND)}"
+        )
     window.events.shown += lambda: apply_native_titlebar(window)
     window.events.shown += lambda: apply_glass(window)
     window.events.shown += apply_dock_identity
+    apply_dark_appearance()
     webview.start(apply_native_titlebar, window)
     api._stop_caffeinate()
     return 0

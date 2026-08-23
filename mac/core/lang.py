@@ -110,6 +110,14 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "Choose folders and files",
     },
     "picker_prompt": {"ru": "Выбрать", "en": "Choose"},
+    "trash_failed": {
+        "ru": "в Корзину не ушёл: {error}",
+        "en": "did not reach the Trash: {error}",
+    },
+    "shutdown_no_command": {
+        "ru": "система не дала команду на выключение",
+        "en": "the system refused the shutdown command",
+    },
 
     "eta_calculating": {"ru": "считаю…", "en": "calculating…"},
     "eta_finishing": {"ru": "завершаем…", "en": "finishing…"},

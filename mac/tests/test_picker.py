@@ -158,9 +158,35 @@ def case_picker_is_translated(work: Path) -> list[str]:
     return problems
 
 
+def case_ui_strings_go_through_lang(work: Path) -> list[str]:
+    import inspect
+    import app as gui
+
+    problems: list[str] = []
+    for func, keys in ((gui.Api.choose_folder, ("picker_message", "picker_prompt")),
+                       (gui.Api.trash_verified, ("trash_failed",)),
+                       (gui.Api._shutdown_countdown, ("shutdown_no_command",))):
+        source = inspect.getsource(func)
+        for key in keys:
+            if key not in source:
+                problems.append(
+                    f"{func.__qualname__} не берёт «{key}» из словаря"
+                )
+        for line in source.splitlines():
+            text = line.strip()
+            if text.startswith("#"):
+                continue
+            if CYRILLIC & set(text):
+                problems.append(
+                    f"{func.__qualname__}: русский текст прямо в коде — {text}"
+                )
+    return problems
+
+
 def main() -> int:
     cases = [
         ("диалог выбора говорит на своём языке", case_picker_is_translated),
+        ("видимые строки идут через словарь", case_ui_strings_go_through_lang),
         ("папка целиком плюс отдельные файлы", case_folder_plus_files),
         ("файл чужого режима виден строкой", case_wrong_mode_is_visible),
         ("умолчания как в брифе части 2", case_defaults_match_brief),
