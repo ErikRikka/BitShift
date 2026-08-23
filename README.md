@@ -172,7 +172,14 @@ AV1 (software — Apple has no hardware AV1 encoder, so it is slow but very comp
 | `bitshift.ico`, `bitshift-source.png` | Icon and the master image both versions are cut from |
 | `CLAUDE.md`, `mac/CLAUDE.md` | Engineering notes: architecture, measurements, hard-won pitfalls. **Written in Russian** — these are working notes rather than user documentation |
 | `docs-mac-port.md` | What still needs porting between the two versions (in Russian) |
+| `THIRD-PARTY.md` | What ships inside the downloads and under which licences |
 
 ## Licence
 
 MIT — see [LICENSE](LICENSE).
+
+**The macOS download bundles FFmpeg, and that build is GPL v2+.** It does not change the
+licence of BitShift itself — the app runs `ffmpeg` as a separate process rather than
+linking against it — but the notice and a pointer to the sources belong with the binary.
+Both are in [THIRD-PARTY.md](THIRD-PARTY.md), along with everything else that ships inside
+the app. The Windows exe bundles nothing: you install FFmpeg yourself.

@@ -1,0 +1,91 @@
+name: Bug report / Что-то сломалось
+description: Something went wrong — encoding, verification, the window, anything.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Fill in what you can — the fields below are the ones I would otherwise have to
+        ask you for, so answering them up front saves a round trip. English or Russian,
+        whichever is easier.
+
+        Отвечайте на том языке, на котором удобнее. Поля ниже — ровно то, что иначе
+        пришлось бы спрашивать отдельным письмом.
+
+        **If a file was lost or damaged, say so in the first line.** That jumps the queue.
+        **Если файл пропал или испортился — напишите это первой строкой.** Это вне очереди.
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform / Платформа
+      options:
+        - macOS
+        - Windows
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: BitShift version / Версия BitShift
+      description: >-
+        Gear button, bottom of the settings card.
+        Кнопка-шестерёнка, внизу карточки настроек.
+      placeholder: "3.8"
+    validations:
+      required: true
+
+  - type: input
+    id: machine
+    attributes:
+      label: OS and hardware / Система и железо
+      description: >-
+        macOS: version and chip. Windows: version and graphics card.
+        Мак: версия и чип. Windows: версия и видеокарта.
+      placeholder: "macOS 15.2, M1 Pro  —  или  —  Windows 11, RTX 4070 Laptop"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened / Что произошло
+      description: >-
+        What you did, what you expected, what you got instead. Screenshots help.
+        Что делали, чего ждали, что получилось. Скриншоты помогают.
+    validations:
+      required: true
+
+  - type: textarea
+    id: source
+    attributes:
+      label: The footage / Исходники
+      description: >-
+        Codec, resolution, frame rate, audio — `ffprobe` output is ideal. Where the files
+        live matters too: internal disk, external HDD, network share.
+        Кодек, разрешение, частота кадров, звук — лучше всего вывод `ffprobe`. Где лежат
+        файлы, тоже важно: внутренний диск, внешний HDD, сетевая шара.
+      placeholder: "h264 3840x2160 25fps yuv420p, pcm_s24le 16ch, внешний USB-HDD"
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Log / Лог
+      description: |
+        macOS: `~/Library/Logs/BitShift.log`
+        Windows: the log lives next to the exe.
+        Windows: лог лежит рядом с exe.
+
+        Paste the last few dozen lines — the ones around the moment it went wrong.
+        Вставьте последние несколько десятков строк — те, что вокруг момента сбоя.
+      render: text
+
+  - type: checkboxes
+    id: originals
+    attributes:
+      label: Originals / Оригиналы
+      options:
+        - label: >-
+            My originals are still where they should be (in place, or in the Trash /
+            Recycle Bin) — Оригиналы на месте: либо там же, где были, либо в Корзине

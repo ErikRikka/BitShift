@@ -124,9 +124,11 @@ def check_bundle(app: Path) -> None:
     ffmpeg = app / "Contents" / "Resources" / BUNDLED_TOOLS_SUBDIR / "ffmpeg"
     index = app / "Contents" / "Resources" / "ui" / "index.html"
     launcher = app / "Contents" / "MacOS" / APP_NAME
+    notice = app / "Contents" / "Resources" / "THIRD-PARTY.md"
 
     for path, что in ((ffmpeg, "встроенный ffmpeg"), (index, "интерфейс"),
-                      (launcher, "запускатор")):
+                      (launcher, "запускатор"),
+                      (notice, "уведомление о лицензиях")):
         if not path.exists():
             sys.exit(f"в бандле нет: {что} ({path})")
 

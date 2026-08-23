@@ -10,6 +10,8 @@ BUILD = ROOT / "build"
 UI_FILES = sorted(str(p) for p in (ROOT / "ui").iterdir() if p.is_file())
 TOOL_FILES = sorted(str(p) for p in (BUILD / BUNDLED_TOOLS_SUBDIR).iterdir()
                     if p.is_file())
+NOTICE_FILES = [str(ROOT.parent / name) for name in
+                ("LICENSE", "THIRD-PARTY.md", "THIRD-PARTY.ru.md")]
 
 PLIST = {
     "CFBundleName": APP_NAME,
@@ -25,7 +27,8 @@ PLIST = {
 setup(
     name=APP_NAME,
     app=["app.py"],
-    data_files=[("ui", UI_FILES), (BUNDLED_TOOLS_SUBDIR, TOOL_FILES)],
+    data_files=[("ui", UI_FILES), (BUNDLED_TOOLS_SUBDIR, TOOL_FILES),
+                ("", NOTICE_FILES)],
     options={
         "py2app": {
             "iconfile": str(BUILD / "icon.icns"),
