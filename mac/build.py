@@ -11,7 +11,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from core.config import APP_NAME, BUNDLED_TOOLS_SUBDIR
+from core.config import APP_NAME, BUNDLE_REQUIRED, BUNDLED_TOOLS_SUBDIR
+from core.modes import CODECS
 
 ROOT = Path(__file__).resolve().parent
 BUILD = ROOT / "build"
@@ -19,21 +20,16 @@ TOOLS = BUILD / BUNDLED_TOOLS_SUBDIR
 DIST = ROOT / "dist"
 
 TOOL_SOURCES = {
-    "ffmpeg": "https://www.osxexperts.net/ffmpeg711arm.zip",
-    "ffprobe": "https://www.osxexperts.net/ffprobe711arm.zip",
+    "ffmpeg": "https://www.osxexperts.net/ffmpeg9arm.zip",
+    "ffprobe": "https://www.osxexperts.net/ffprobe9arm.zip",
 }
 
 TOOL_HASHES = {
-    "ffmpeg": "011221d75eae36943b5a6a28f70e25928cfb5602fe616d06da0a3b9b55ff6b75",
-    "ffprobe": "ae77d6751f4db81098a11dcc966a8d098925411430169475c8f8a7bfad76188b",
+    "ffmpeg": "591260c945d0eef150e3bf82b0ef988bd36a9cecc18ff05d6679617159f0a95e",
+    "ffprobe": "e11c17e8200b3ee4c4c186d245e2b4053f01d56957336c1817fca0b997469106",
 }
 
-REQUIRED_ENCODERS = (
-    "hevc_videotoolbox",
-    "prores_videotoolbox",
-    "h264_videotoolbox",
-    "libsvtav1",
-)
+REQUIRED_ENCODERS = tuple(sorted({codec.encoder for codec in CODECS.values()}))
 
 
 def say(text: str) -> None:
@@ -45,9 +41,13 @@ def fetch_tools() -> None:
     for name, url in TOOL_SOURCES.items():
         target = TOOLS / name
         if target.is_file():
-            say(f"  {name}: уже скачан")
-            continue
-        say(f"  {name}: качаю…")
+            if hashlib.sha256(target.read_bytes()).hexdigest() == TOOL_HASHES[name]:
+                say(f"  {name}: уже скачан")
+                continue
+            say(f"  {name}: отпечаток не сошёлся, качаю заново…")
+            target.unlink()
+        else:
+            say(f"  {name}: качаю…")
         archive = BUILD / f"{name}.zip"
         urllib.request.urlretrieve(url, archive)
         with zipfile.ZipFile(archive) as zf:
@@ -107,7 +107,8 @@ def make_icon() -> None:
 
 def make_bundle() -> Path:
     shutil.rmtree(DIST, ignore_errors=True)
-    shutil.rmtree(ROOT / "build" / "bdist.macosx", ignore_errors=True)
+    for stale in BUILD.glob("bdist.macosx*"):
+        shutil.rmtree(stale, ignore_errors=True)
     result = subprocess.run([sys.executable, str(ROOT / "setup.py"), "py2app"],
                             cwd=ROOT, capture_output=True, text=True)
     if result.returncode != 0:
@@ -121,16 +122,15 @@ def make_bundle() -> Path:
 
 
 def check_bundle(app: Path) -> None:
-    ffmpeg = app / "Contents" / "Resources" / BUNDLED_TOOLS_SUBDIR / "ffmpeg"
-    index = app / "Contents" / "Resources" / "ui" / "index.html"
+    resources = app / "Contents" / "Resources"
+    ffmpeg = resources / BUNDLED_TOOLS_SUBDIR / "ffmpeg"
     launcher = app / "Contents" / "MacOS" / APP_NAME
-    notice = app / "Contents" / "Resources" / "THIRD-PARTY.md"
 
-    for path, что in ((ffmpeg, "встроенный ffmpeg"), (index, "интерфейс"),
-                      (launcher, "запускатор"),
-                      (notice, "уведомление о лицензиях")):
-        if not path.exists():
-            sys.exit(f"в бандле нет: {что} ({path})")
+    missing = [rel for rel in BUNDLE_REQUIRED if not (resources / rel).exists()]
+    if not launcher.exists():
+        missing.append(f"MacOS/{APP_NAME}")
+    if missing:
+        sys.exit("в бандле нет: " + ", ".join(missing))
 
     version = subprocess.run([str(ffmpeg), "-version"],
                              capture_output=True, text=True)

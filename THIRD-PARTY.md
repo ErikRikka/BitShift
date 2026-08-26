@@ -13,7 +13,7 @@ The macOS app is self-contained, so the archive carries third-party binaries wit
 
 ### FFmpeg — **GPL v2 or later**
 
-`ffmpeg` and `ffprobe` **7.1.1** are bundled inside `BitShift.app/Contents/Resources/bin/`.
+`ffmpeg` and `ffprobe` **9.0** are bundled inside `BitShift.app/Contents/Resources/bin/`.
 
 The binaries come from the arm64 builds published at
 [osxexperts.net](https://www.osxexperts.net/) and are configured with `--enable-gpl`
@@ -21,10 +21,17 @@ together with `libx264`, `libx265` and `libvidstab`. **A build with those option
 covered by the GNU General Public License, version 2 or later** — not the LGPL that a
 default FFmpeg build carries.
 
-- License text: <https://www.gnu.org/licenses/old-licenses/gpl-2.0.html>
+- License text: [COPYING.GPLv2](COPYING.GPLv2) — a copy also ships inside the app,
+  next to this file, at `BitShift.app/Contents/Resources/`
 - FFmpeg's own licensing notes: <https://ffmpeg.org/legal.html>
-- Source code for FFmpeg 7.1.1: <https://ffmpeg.org/releases/ffmpeg-7.1.1.tar.xz>
-  (also <https://github.com/FFmpeg/FFmpeg/tree/n7.1.1>)
+- Upstream source for FFmpeg 9.0: <https://ffmpeg.org/releases/ffmpeg-9.0.tar.xz>
+  (also <https://github.com/FFmpeg/FFmpeg/tree/n9.0>)
+
+The binaries are not built here — they are the published arm64 builds from osxexperts.net,
+statically linked against x264, x265, libaom and SVT-AV1. The upstream tarball above is
+FFmpeg's own source, not that packager's exact build tree; if you need the precise
+corresponding source for those binaries, ask their author. BitShift neither patches nor
+recompiles them.
 
 **This does not make BitShift itself GPL.** The app never links against `libav*`; it runs
 `ffmpeg` and `ffprobe` as separate processes, the same way a shell script would. The
@@ -37,14 +44,24 @@ Exact copies of the binaries in any release are pinned by SHA-256 in
 
 ### Python and the packages inside the app
 
-The bundle carries its own interpreter and libraries, all under permissive licenses:
+The bundle carries its own interpreter and libraries, all under permissive licenses.
+The list is read off the bundle itself (`Contents/Resources/lib/python314.zip`) rather
+than off `requirements.txt`, because py2app pulls in transitive dependencies too.
 
 | Component | Version | License |
 |---|---|---|
 | CPython | 3.14.7 | Python Software Foundation License |
 | pywebview | 6.2.1 | BSD 3-Clause |
-| pyobjc-core, pyobjc-framework-Cocoa | 12.2.2 | MIT |
-| py2app (build tool, not shipped) | 0.28.10 | MIT |
+| bottle | 0.13.4 | MIT |
+| proxy_tools | 0.1.0 | MIT |
+| typing_extensions | 4.16.0 | PSF-2.0 |
+| pyobjc-core | 12.2.2 | MIT |
+| pyobjc-framework-Cocoa | 12.2.2 | MIT |
+| pyobjc-framework-Quartz | 12.2.2 | MIT |
+| pyobjc-framework-WebKit | 12.2.2 | MIT |
+| pyobjc-framework-UniformTypeIdentifiers | 12.2.2 | MIT |
+
+py2app 0.28.10 (MIT) builds the bundle but does not ship inside it.
 
 ---
 

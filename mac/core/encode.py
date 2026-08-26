@@ -236,7 +236,7 @@ def run_encode(
                 and dst.exists() and dst.stat().st_size > 0),
             dst=dst,
             stderr=stderr_text,
-            used_cpu_decode=not on_hw,
+            used_cpu_decode=hw_real and not on_hw,
             hw_decode_broke=broke,
             audio_mode=audio_mode,
         )

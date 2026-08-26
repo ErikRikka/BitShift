@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import core.tools as tools
-from core.config import APP_NAME, BUNDLED_TOOLS_SUBDIR
+from core.config import APP_NAME, BUNDLE_REQUIRED, BUNDLED_TOOLS_SUBDIR
 
 BUNDLE = Path(__file__).resolve().parent.parent / "dist" / f"{APP_NAME}.app"
 
@@ -69,8 +69,7 @@ def case_built_bundle_is_complete(_work: Path) -> list[str]:
     resources = BUNDLE / "Contents" / "Resources"
     problems: list[str] = []
 
-    for relative in (f"{BUNDLED_TOOLS_SUBDIR}/ffmpeg", f"{BUNDLED_TOOLS_SUBDIR}/ffprobe",
-                     "ui/index.html", "ui/style.css", "ui/app.js"):
+    for relative in BUNDLE_REQUIRED:
         if not (resources / relative).exists():
             problems.append(f"в бандле нет {relative}")
     if problems:

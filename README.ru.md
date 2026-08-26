@@ -170,7 +170,7 @@ xattr -dr com.apple.quarantine /путь/к/BitShift.app
 | `bitshift.ico`, `bitshift-source.png` | Иконка и общий исходник, из которого её режут обе версии |
 | `CLAUDE.md`, `mac/CLAUDE.md` | Инженерные заметки: устройство, замеры, выстраданные грабли |
 | `docs-mac-port.md` | Что ещё нужно перенести между версиями |
-| `THIRD-PARTY.md` | Что попадает внутрь загрузок и под какими лицензиями |
+| [`THIRD-PARTY.ru.md`](THIRD-PARTY.ru.md) | Что попадает внутрь загрузок и под какими лицензиями |
 
 ## Лицензия
 

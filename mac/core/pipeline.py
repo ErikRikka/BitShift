@@ -30,7 +30,9 @@ from .encode import (
 )
 from .estimate import output_bytes_guess
 from .modes import AUDIO_AAC, AUDIO_ORIGINAL, Codec, Mode, should_skip, target_bitrate
-from .probe import MediaInfo, ProbeError, count_frames, frames_countable, probe
+from .probe import (
+    MediaInfo, ProbeError, count_frames, frames_countable, probe, reset_probe_cache,
+)
 from .staging import (
     Slot, StagingArea, copy_in, move_out, reset_volume_cache, volume_info,
 )
@@ -534,7 +536,7 @@ class Pipeline:
 
             if job.src_frames is None and frames_countable(job.src):
                 try:
-                    job.src_frames = count_frames(job.src)
+                    job.src_frames = count_frames(job.src, on_pid=self._track_pid)
                 except ProbeError:
                     job.src_frames = None
             job.progress = VERIFY_SRC_FRAMES_SHARE
@@ -636,7 +638,8 @@ class Pipeline:
             result = move_to_trash(job.src)
             if result.ok:
                 self._update(job, State.TRASHED)
-                self._log(f"🗑  {job.name} → Корзина")
+                where = f" ({result.trashed_to})" if result.trashed_to is not None else ""
+                self._log(f"🗑  {job.name} → Корзина{where}")
             else:
                 self._log(f"{job.name}: в Корзину не ушёл ({result.error}), оригинал на месте")
 
@@ -646,6 +649,7 @@ class Pipeline:
             return []
 
         reset_volume_cache()
+        reset_probe_cache()
 
         if self._should_stage():
             self._staging = StagingArea()
@@ -666,7 +670,8 @@ class Pipeline:
 
                 def encode_then_verify(job: Job) -> None:
                     staged[job.src].result()
-                    self._update(job, State.QUEUED)
+                    if not self._stop.is_set():
+                        self._update(job, State.QUEUED)
                     try:
                         self._encode_one(job)
                     finally:
@@ -685,5 +690,9 @@ class Pipeline:
             transfer.join(timeout=300)
             if self._staging is not None:
                 self._staging.cleanup()
+            if self._stop.is_set():
+                for job in self.jobs:
+                    if job.state not in TERMINAL:
+                        self._update(job, State.STOPPED, "остановлено, файл не переделан")
 
         return self.jobs

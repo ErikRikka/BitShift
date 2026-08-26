@@ -43,6 +43,10 @@ Download `BitShift-macOS.zip` from [Releases](../../../releases/latest) — ever
 inside: its own Python, pywebview, PyObjC and its own `ffmpeg`. No Homebrew, no virtual
 environment, nothing to install. All you need is a Mac on Apple Silicon.
 
+Because everything ships inside, so do other people's licences: the bundled FFmpeg is a
+GPL v2+ build. What that means for BitShift's own MIT licence — and the full list of what
+travels in the archive — is in [THIRD-PARTY.md](../THIRD-PARTY.md).
+
 **macOS will block the first launch** — the app is signed locally, without Apple
 notarisation (which requires a paid developer account). Two ways past it:
 

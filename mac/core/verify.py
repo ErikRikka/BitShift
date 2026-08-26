@@ -114,9 +114,9 @@ def verify_pair(
                 a = src_frames
                 step(VERIFY_WEIGHT_PROBE + VERIFY_WEIGHT_FRAMES / 2)
             else:
-                a = count_frames(src_info.path)
+                a = count_frames(src_info.path, on_pid=on_pid)
                 step(VERIFY_WEIGHT_PROBE + VERIFY_WEIGHT_FRAMES / 2)
-            b = count_frames(dst)
+            b = count_frames(dst, on_pid=on_pid)
         except ProbeError as exc:
             report.fail("кадры", f"не удалось посчитать кадры: {exc}")
         else:

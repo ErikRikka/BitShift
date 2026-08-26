@@ -151,4 +151,3 @@ def human_size(size: float, lang: str = DEFAULT_LANG) -> str:
             text = f"{size:.1f}".rstrip("0").rstrip(".")
             return f"{text.replace('.', DECIMAL_MARK[normalize(lang)])} {unit}"
         size /= 1024
-    return f"{size:.1f} {units[-1]}"

@@ -32,7 +32,6 @@ from core.config import (
     DEFAULT_CODEC,
     DEFAULT_LANG,
     DEFAULT_RECURSIVE,
-    LOG_KEEP,
     LOG_PATH,
     NS_FULL_SIZE_CONTENT_VIEW,
     NS_SEPARATOR_NONE,
@@ -128,11 +127,9 @@ class Api:
         self._caffeinate_proc: subprocess.Popen | None = None
         self._shutdown_at: float | None = None
         self._shutdown_error = ""
-        self._lock = threading.Lock()
         self._control = threading.Lock()
         self._trash_key: tuple | None = None
         self._trash_cache: list[Job] = []
-        self.log_lines: list[str] = []
         self._window: webview.Window | None = None
 
 
@@ -350,7 +347,7 @@ class Api:
     def get_state(self) -> dict:
         selected = self._selected_jobs()
         source_bytes = sum(j.src_bytes for j in selected)
-        saved = sum(j.saved_bytes for j in self.jobs)
+        saved = sum(j.saved_bytes for j in selected)
         percent, summary = self._summary()
 
         files = [self._file_payload(j, False) for j in self.jobs]
@@ -566,10 +563,15 @@ class Api:
         self._start_caffeinate()
 
         def work() -> None:
+            natural = False
             try:
                 self.pipeline.run()
+                natural = (
+                    self.pipeline is not None
+                    and not self.pipeline.stopped
+                    and not self.stopping
+                )
             finally:
-                natural = self.pipeline is not None and not self.pipeline.stopped
                 self.stopping = False
                 self._push()
                 if self.shutdown_after and natural:
@@ -616,10 +618,6 @@ class Api:
 
 
     def _note(self, text: str) -> None:
-        line = f"{datetime.now():%H:%M:%S}  {text}"
-        with self._lock:
-            self.log_lines.append(line)
-            del self.log_lines[:-LOG_KEEP]
         note_to_log(text)
 
 

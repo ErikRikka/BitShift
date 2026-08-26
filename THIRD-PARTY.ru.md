@@ -13,7 +13,7 @@
 
 ### FFmpeg — **GPL v2 или новее**
 
-`ffmpeg` и `ffprobe` версии **7.1.1** лежат внутри
+`ffmpeg` и `ffprobe` версии **9.0** лежат внутри
 `BitShift.app/Contents/Resources/bin/`.
 
 Бинарники взяты из arm64-сборок с [osxexperts.net](https://www.osxexperts.net/)
@@ -21,10 +21,16 @@
 **Сборка с такими опциями подпадает под GNU General Public License версии 2 или новее** —
 а не под LGPL, под которой идёт сборка FFmpeg по умолчанию.
 
-- Текст лицензии: <https://www.gnu.org/licenses/old-licenses/gpl-2.0.html>
+- Текст лицензии: [COPYING.GPLv2](COPYING.GPLv2) — копия едет и внутри приложения,
+  рядом с этим файлом, в `BitShift.app/Contents/Resources/`
 - Что об этом пишет сам проект: <https://ffmpeg.org/legal.html>
-- Исходники FFmpeg 7.1.1: <https://ffmpeg.org/releases/ffmpeg-7.1.1.tar.xz>
-  (либо <https://github.com/FFmpeg/FFmpeg/tree/n7.1.1>)
+- Исходники FFmpeg 9.0 у апстрима: <https://ffmpeg.org/releases/ffmpeg-9.0.tar.xz>
+  (либо <https://github.com/FFmpeg/FFmpeg/tree/n9.0>)
+
+Бинарники собраны не здесь — это опубликованные arm64-сборки с osxexperts.net, статически
+слинкованные с x264, x265, libaom и SVT-AV1. Тарбол выше — исходники самого FFmpeg, а не
+дерево сборки того упаковщика; если нужны в точности соответствующие исходники этих
+бинарников, спрашивать надо у него. BitShift их не патчит и не пересобирает.
 
 **На сам BitShift это не распространяется.** Приложение не линкуется с `libav*` — оно
 запускает `ffmpeg` и `ffprobe` отдельными процессами, ровно как это делал бы shell-скрипт.
@@ -37,14 +43,24 @@
 
 ### Python и пакеты внутри приложения
 
-Бандл несёт собственный интерпретатор и библиотеки, все под разрешительными лицензиями:
+Бандл несёт собственный интерпретатор и библиотеки, все под разрешительными лицензиями.
+Список снят с самого бандла (`Contents/Resources/lib/python314.zip`), а не
+с `requirements.txt`: py2app затягивает и транзитивные зависимости.
 
 | Компонент | Версия | Лицензия |
 |---|---|---|
 | CPython | 3.14.7 | Python Software Foundation License |
 | pywebview | 6.2.1 | BSD 3-Clause |
-| pyobjc-core, pyobjc-framework-Cocoa | 12.2.2 | MIT |
-| py2app (только для сборки, внутрь не попадает) | 0.28.10 | MIT |
+| bottle | 0.13.4 | MIT |
+| proxy_tools | 0.1.0 | MIT |
+| typing_extensions | 4.16.0 | PSF-2.0 |
+| pyobjc-core | 12.2.2 | MIT |
+| pyobjc-framework-Cocoa | 12.2.2 | MIT |
+| pyobjc-framework-Quartz | 12.2.2 | MIT |
+| pyobjc-framework-WebKit | 12.2.2 | MIT |
+| pyobjc-framework-UniformTypeIdentifiers | 12.2.2 | MIT |
+
+py2app 0.28.10 (MIT) собирает бандл, но внутрь не попадает.
 
 ---
 

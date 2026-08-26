@@ -69,10 +69,10 @@ def case_noisy_stderr_does_not_hang(work: Path) -> list[str]:
         return problems
 
     ok, err = result
+    if not ok and "hardware accelerated AV1" not in err and "videotoolbox" not in err:
+        problems.append(f"декод провалился, но не той ошибкой: {err[:120]!r}")
     if ok:
-        problems.append("декод с невозможным аппаратным ускорением отчитался успехом")
-    if "hardware accelerated AV1" not in err and "videotoolbox" not in err:
-        problems.append(f"в stderr не та ошибка: {err[:120]!r}")
+        print("    примечание: на этой машине videotoolbox декодирует AV1 успешно")
     return problems
 
 
@@ -88,13 +88,13 @@ def case_stderr_is_capped(work: Path) -> list[str]:
     if not done:
         return [f"ЗАВИС на {DEADLINE:.0f}с"]
 
-    _, err = result
+    code, err = result
     lines = err.splitlines()
     problems: list[str] = []
     if len(lines) > FFMPEG_STDERR_TAIL_LINES:
         problems.append(f"stderr не ограничен: {len(lines)} строк")
-    if not lines:
-        problems.append("stderr потерялся целиком")
+    if code != 0 and not lines:
+        problems.append("декод провалился, а stderr потерялся целиком")
     return problems
 
 

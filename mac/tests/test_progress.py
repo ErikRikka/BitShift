@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import core.pipeline as pipeline_module
 import core.staging as staging_module
+from core.config import ETA_TAIL_MINIMUM
 from core.eta import Estimator, format_left
 from core.lang import t as tr
 from core.modes import CODEC_HEVC, MODES_BY_KEY
@@ -93,9 +94,10 @@ def case_eta_tail(_work: Path) -> list[str]:
     eta.update(99.9, 100, now=600.0)
     tail = eta.update(99.95, 100, now=601.0, tail_pending=True)
 
+    expected = format_left(ETA_TAIL_MINIMUM)
     problems: list[str] = []
-    if tail == "меньше минуты":
-        problems.append("на хвосте обещано «меньше минуты»")
+    if tail != expected:
+        problems.append(f"на хвосте показано «{tail}», ожидали «{expected}»")
     if eta.update(99.95, 100, now=601.0, tail_pending=False) != "завершаем…":
         problems.append("без хвоста на 99,9% должно быть «завершаем…»")
     return problems

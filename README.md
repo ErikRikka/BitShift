@@ -172,7 +172,7 @@ AV1 (software — Apple has no hardware AV1 encoder, so it is slow but very comp
 | `bitshift.ico`, `bitshift-source.png` | Icon and the master image both versions are cut from |
 | `CLAUDE.md`, `mac/CLAUDE.md` | Engineering notes: architecture, measurements, hard-won pitfalls. **Written in Russian** — these are working notes rather than user documentation |
 | `docs-mac-port.md` | What still needs porting between the two versions (in Russian) |
-| `THIRD-PARTY.md` | What ships inside the downloads and under which licences |
+| [`THIRD-PARTY.md`](THIRD-PARTY.md) | What ships inside the downloads and under which licences |
 
 ## Licence
 

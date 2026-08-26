@@ -3,8 +3,16 @@ from __future__ import annotations
 from pathlib import Path
 
 APP_NAME = "BitShift"
-APP_VERSION = "3.8"
+APP_VERSION = "3.8.3"
 BUNDLED_TOOLS_SUBDIR = "bin"
+NOTICE_NAMES = ("LICENSE", "COPYING.GPLv2", "THIRD-PARTY.md", "THIRD-PARTY.ru.md")
+BUNDLE_REQUIRED = (
+    f"{BUNDLED_TOOLS_SUBDIR}/ffmpeg",
+    f"{BUNDLED_TOOLS_SUBDIR}/ffprobe",
+    "ui/index.html",
+    "ui/style.css",
+    "ui/app.js",
+) + NOTICE_NAMES
 ICON_NAME = "icon.icns"
 
 RESULT_SUFFIX = "_v2"
@@ -107,4 +115,3 @@ PREFS_PATH = (
 )
 
 LOG_PATH = Path.home() / "Library" / "Logs" / f"{APP_NAME}.log"
-LOG_KEEP = 200

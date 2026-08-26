@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from fractions import Fraction
 from pathlib import Path
@@ -67,18 +68,40 @@ def _tool(name: str) -> str:
     return path
 
 
-def _run(args: list[str], timeout: float | None = None) -> str:
-    proc = subprocess.run(
+def _run(
+    args: list[str],
+    timeout: float | None = None,
+    on_pid: Callable[[int, bool], None] | None = None,
+) -> str:
+    if on_pid is None:
+        proc = subprocess.run(
+            args,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout,
+        )
+        if proc.returncode != 0:
+            raise ProbeError(proc.stderr.strip() or f"код возврата {proc.returncode}")
+        return proc.stdout
+
+    with subprocess.Popen(
         args,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         text=True,
         encoding="utf-8",
         errors="replace",
-        timeout=timeout,
-    )
-    if proc.returncode != 0:
-        raise ProbeError(proc.stderr.strip() or f"код возврата {proc.returncode}")
-    return proc.stdout
+    ) as running:
+        on_pid(running.pid, True)
+        try:
+            out, err = running.communicate(timeout=timeout)
+        finally:
+            on_pid(running.pid, False)
+    if running.returncode != 0:
+        raise ProbeError(err.strip() or f"код возврата {running.returncode}")
+    return out
 
 
 def _to_float(value: object) -> float:
@@ -179,7 +202,11 @@ def probe(path: Path | str) -> MediaInfo:
     return info
 
 
-def count_frames(path: Path | str, timeout: float | None = None) -> int:
+def count_frames(
+    path: Path | str,
+    timeout: float | None = None,
+    on_pid: Callable[[int, bool], None] | None = None,
+) -> int:
     path = Path(path)
     out = _run(
         [
@@ -192,6 +219,7 @@ def count_frames(path: Path | str, timeout: float | None = None) -> int:
             str(path),
         ],
         timeout=timeout,
+        on_pid=on_pid,
     )
     return _to_int(out.strip().rstrip(","))
 

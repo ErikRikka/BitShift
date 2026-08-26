@@ -2,7 +2,7 @@ from pathlib import Path
 
 from setuptools import setup
 
-from core.config import APP_NAME, APP_VERSION, BUNDLED_TOOLS_SUBDIR
+from core.config import APP_NAME, APP_VERSION, BUNDLED_TOOLS_SUBDIR, NOTICE_NAMES
 
 ROOT = Path(__file__).resolve().parent
 BUILD = ROOT / "build"
@@ -10,8 +10,7 @@ BUILD = ROOT / "build"
 UI_FILES = sorted(str(p) for p in (ROOT / "ui").iterdir() if p.is_file())
 TOOL_FILES = sorted(str(p) for p in (BUILD / BUNDLED_TOOLS_SUBDIR).iterdir()
                     if p.is_file())
-NOTICE_FILES = [str(ROOT.parent / name) for name in
-                ("LICENSE", "THIRD-PARTY.md", "THIRD-PARTY.ru.md")]
+NOTICE_FILES = [str(ROOT.parent / name) for name in NOTICE_NAMES]
 
 PLIST = {
     "CFBundleName": APP_NAME,

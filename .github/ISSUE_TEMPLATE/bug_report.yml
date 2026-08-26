@@ -30,8 +30,9 @@ body:
     attributes:
       label: BitShift version / Версия BitShift
       description: >-
-        Gear button, bottom of the settings card.
-        Кнопка-шестерёнка, внизу карточки настроек.
+        Gear button at the bottom of the sidebar — the version is at the foot of the
+        panel it opens. Кнопка-шестерёнка внизу боковой колонки: версия написана внизу
+        того, что она открывает.
       placeholder: "3.8"
     validations:
       required: true
@@ -74,8 +75,8 @@ body:
       label: Log / Лог
       description: |
         macOS: `~/Library/Logs/BitShift.log`
-        Windows: the log lives next to the exe.
-        Windows: лог лежит рядом с exe.
+        Windows: `%LOCALAPPDATA%\HEVC-Converter.log` — имя файла историческое,
+        приложение переименовали, а лог нет.
 
         Paste the last few dozen lines — the ones around the moment it went wrong.
         Вставьте последние несколько десятков строк — те, что вокруг момента сбоя.

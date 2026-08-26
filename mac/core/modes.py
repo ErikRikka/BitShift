@@ -159,12 +159,6 @@ AUDIO_MODES: tuple[AudioMode, ...] = (
 AUDIO_MODES_BY_KEY = {a.key: a for a in AUDIO_MODES}
 
 
-def pixel_rate(width: int, height: int, fps: float) -> float:
-    if width <= 0 or height <= 0 or fps <= 0:
-        return 0.0
-    return float(width) * float(height) * float(fps)
-
-
 def target_bitrate(
     mode: Mode, src_bitrate: int, px: float, codec: Codec | None = None
 ) -> int:

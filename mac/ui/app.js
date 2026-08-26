@@ -282,18 +282,26 @@ function renderStartButton() {
   btn.disabled = state.running || !state.can_start;
   const working = state.running && !state.paused && !state.stopping;
   btn.classList.toggle('btn--working', working);
-  if (working) {
-    btn.innerHTML = '<span class="btn__spin"></span>'
-      + escapeHtml(ui('btn_encoding', { percent: Math.round(state.percent * 100) }));
-  } else if (state.stopping) {
-    btn.textContent = ui('btn_stopping');
-  } else if (state.running) {
-    btn.textContent = ui('btn_paused');
-  } else {
-    btn.textContent = ui('btn_start');
-  }
-}
 
+  let label = ui('btn_start');
+  if (working) label = ui('btn_encoding', { percent: Math.round(state.percent * 100) });
+  else if (state.running && state.paused) label = ui('btn_paused');
+
+  if (!working) {
+    btn.textContent = label;
+    return;
+  }
+  let spin = btn.querySelector('.btn__spin');
+  if (!spin) {
+    btn.textContent = '';
+    spin = document.createElement('span');
+    spin.className = 'btn__spin';
+    const text = document.createElement('span');
+    text.className = 'btn__label';
+    btn.append(spin, text);
+  }
+  btn.querySelector('.btn__label').textContent = label;
+}
 
 function clockText(seconds) {
   const m = Math.floor(seconds / 60);
@@ -422,7 +430,7 @@ function setupWindowDrag() {
     zone.addEventListener('mouseenter', () => drag(true));
     zone.addEventListener('mouseleave', () => drag(false));
   }
-  for (const btn of document.querySelectorAll('.main__head .btn')) {
+  for (const btn of document.querySelectorAll('.main__head .btn, .main__head .check')) {
     btn.addEventListener('mouseenter', () => drag(false));
     btn.addEventListener('mouseleave', () => drag(true));
   }
