@@ -40,6 +40,7 @@ const UI = {
   vol_left: { ru: 'Примерно', en: 'About' },
   settings_title: { ru: 'Настройки', en: 'Settings' },
   settings_lang: { ru: 'Язык', en: 'Language' },
+  settings_author: { ru: 'Создано: Эрик Рикка', en: 'Created by Erik Rikka' },
   pick_folder: { ru: 'Выберите папку', en: 'Choose a folder' },
   no_folder: { ru: 'Папка не выбрана', en: 'No folder selected' },
   empty_title: { ru: 'Ничего не выбрано', en: 'Nothing selected' },

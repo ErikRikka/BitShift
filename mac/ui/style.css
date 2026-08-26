@@ -593,3 +593,5 @@ body {
 }
 
 .settings__version { font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+
+#settings-close { padding: 4px 11px; font-size: 11.5px; }

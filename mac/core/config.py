@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 APP_NAME = "BitShift"
-APP_VERSION = "3.8.3"
+APP_VERSION = "3.8.4"
 BUNDLED_TOOLS_SUBDIR = "bin"
 NOTICE_NAMES = ("LICENSE", "COPYING.GPLv2", "THIRD-PARTY.md", "THIRD-PARTY.ru.md")
 BUNDLE_REQUIRED = (
