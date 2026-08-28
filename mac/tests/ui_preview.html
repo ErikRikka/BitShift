@@ -125,11 +125,27 @@
         <span class="check__text" data-i18n="opt_shutdown">Выключить мак после конвертации</span>
       </label>
 
+      <label class="check">
+        <input type="checkbox" id="opt-eject">
+        <span class="check__box"></span>
+        <span class="check__text" data-i18n="opt_eject">Извлечь диск(и) после конвертации</span>
+      </label>
+
+      <label class="check">
+        <input type="checkbox" id="opt-vmaf">
+        <span class="check__box"></span>
+        <span class="check__text" data-i18n="opt_vmaf">Проверять качество (VMAF) — медленнее</span>
+      </label>
+
       <label class="check check--danger">
         <input type="checkbox" id="opt-trash">
         <span class="check__box"></span>
         <span class="check__text" data-i18n="opt_trash">Удалять исходники в Корзину после проверки</span>
       </label>
+
+      <div class="settings__row" id="history-row" hidden>
+        <span class="settings__value" id="history-value"></span>
+      </div>
 
       <div class="settings__foot">
         <span class="settings__version">BitShift <span id="app-version">—</span> · <span data-i18n="settings_author">Created by Erik Rikka</span></span>
@@ -203,6 +219,9 @@
       folder_meta: '12 файлов · папок 2 · кодек HEVC · 1 пропущено',
       recursive: true,
       shutdown_after: true,
+      eject_after: false,
+      measure_quality: false,
+      history_text: 'Сэкономлено всего: 412,7 ГБ · 963 файла',
       shutdown_in: 108,
       shutdown_error: '',
       trash: true,

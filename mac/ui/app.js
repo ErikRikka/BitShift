@@ -12,6 +12,8 @@ const UI = {
   },
   opt_recursive: { ru: 'Подпапки', en: 'Subfolders' },
   opt_shutdown: { ru: 'Выключить мак после конвертации', en: 'Shut down the Mac when finished' },
+  opt_eject: { ru: 'Извлечь диск(и) после конвертации', en: 'Eject the volume(s) when finished' },
+  opt_vmaf: { ru: 'Проверять качество (VMAF) — медленнее', en: 'Check quality (VMAF) — slower' },
   opt_trash: { ru: 'Удалять исходники в Корзину после проверки', en: 'Move originals to Trash after verifying' },
   btn_browse: { ru: 'Обзор…', en: 'Browse…' },
   btn_refresh: { ru: 'Обновить', en: 'Refresh' },
@@ -251,11 +253,18 @@ function render() {
 
   $('opt-recursive').checked = state.recursive;
   $('opt-shutdown').checked = state.shutdown_after;
+  $('opt-eject').checked = state.eject_after;
+  $('opt-vmaf').checked = state.measure_quality;
   $('opt-trash').checked = state.trash;
+
+  $('history-row').hidden = !state.history_text;
+  $('history-value').textContent = state.history_text || '';
 
   $('opt-recursive').disabled = state.running || state.files_only;
   $('opt-recursive').closest('.check').title = state.files_only ? ui('recursive_off') : '';
   $('opt-shutdown').disabled = state.running;
+  $('opt-eject').disabled = state.running;
+  $('opt-vmaf').disabled = state.running;
   $('opt-trash').disabled = state.running || !state.trash_available;
 
   renderShutdown();
@@ -412,6 +421,14 @@ $('opt-shutdown').addEventListener('change', (e) => {
   window.pywebview.api.set_shutdown_after(e.target.checked).then(applyFromApi);
 });
 
+$('opt-eject').addEventListener('change', (e) => {
+  window.pywebview.api.set_eject_after(e.target.checked).then(applyFromApi);
+});
+
+$('opt-vmaf').addEventListener('change', (e) => {
+  window.pywebview.api.set_measure_quality(e.target.checked).then(applyFromApi);
+});
+
 $('btn-cancel-shutdown').addEventListener('click', () => {
   window.pywebview.api.cancel_shutdown().then(applyFromApi);
 });
@@ -437,6 +454,25 @@ function setupWindowDrag() {
   }
 }
 
+function setupDropZone() {
+  let depth = 0;
+  document.addEventListener('dragover', (e) => { e.preventDefault(); });
+  document.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    depth += 1;
+    document.body.classList.add('drag-over');
+  });
+  document.addEventListener('dragleave', () => {
+    depth = Math.max(0, depth - 1);
+    if (depth === 0) document.body.classList.remove('drag-over');
+  });
+  document.addEventListener('drop', (e) => {
+    e.preventDefault();
+    depth = 0;
+    document.body.classList.remove('drag-over');
+  });
+}
+
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text == null ? '' : String(text);
@@ -445,6 +481,7 @@ function escapeHtml(text) {
 
 window.addEventListener('pywebviewready', () => {
   setupWindowDrag();
+  setupDropZone();
   window.pywebview.api.get_state().then(applyFromApi);
 });
 

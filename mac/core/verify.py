@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -23,6 +25,7 @@ class VerifyReport:
     checks: dict[str, bool] = field(default_factory=dict)
     problems: list[str] = field(default_factory=list)
     decoded_on_cpu: bool = False
+    vmaf: float | None = None
 
     def fail(self, name: str, message: str) -> "VerifyReport":
         self.checks[name] = False
@@ -62,12 +65,44 @@ def full_decode(
     return ok, err
 
 
+def measure_vmaf(
+    src: Path,
+    dst: Path,
+    *,
+    on_pid: Callable[[int, bool], None] | None = None,
+) -> float | None:
+    log_file = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
+    log_path = Path(log_file.name)
+    log_file.close()
+    try:
+        filt = (
+            "[0:v]scale=iw:ih:flags=bicubic,format=yuv420p[dist];"
+            "[1:v]scale=iw:ih:flags=bicubic,format=yuv420p[ref];"
+            f"[dist][ref]libvmaf=log_path={log_path}:log_fmt=json"
+        )
+        args = [
+            ffmpeg_path(), "-hide_banner", "-v", "error",
+            "-i", str(dst), "-i", str(src),
+            "-lavfi", filt, "-f", "null", "-",
+        ]
+        code, _ = run_with_progress(args, on_pid=on_pid)
+        if code != 0:
+            return None
+        data = json.loads(log_path.read_text())
+        return round(float(data["pooled_metrics"]["vmaf"]["mean"]), 1)
+    except (OSError, ValueError, KeyError, json.JSONDecodeError):
+        return None
+    finally:
+        log_path.unlink(missing_ok=True)
+
+
 def verify_pair(
     src_info: MediaInfo,
     dst: Path,
     codec: Codec,
     *,
     src_frames: int | None = None,
+    measure_quality: bool = False,
     on_progress: Callable[[float], None] | None = None,
     on_pid: Callable[[int, bool], None] | None = None,
 ) -> VerifyReport:
@@ -160,4 +195,8 @@ def verify_pair(
         report.passed("декод")
 
     report.ok = all(report.checks.values())
+
+    if report.ok and measure_quality:
+        report.vmaf = measure_vmaf(src_info.path, dst, on_pid=on_pid)
+
     return report

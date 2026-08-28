@@ -204,6 +204,48 @@ def case_good_pair_passes(work: Path) -> list[str]:
     return problems
 
 
+def case_vmaf_off_by_default(work: Path) -> list[str]:
+    src = work / "источник.mp4"
+    dst = work / "результат.mp4"
+    make_clip(src, 3.0)
+    subprocess.run(
+        ["ffmpeg", "-y", "-v", "error", "-i", str(src),
+         "-c:v", "hevc_videotoolbox", "-b:v", "2M", "-tag:v", "hvc1", str(dst)],
+        check=True,
+    )
+
+    report = verify_pair(probe(src), dst, CODEC_HEVC)
+    problems: list[str] = []
+    if not report.ok:
+        problems.append(f"пара забракована: {report.problems}")
+    if report.vmaf is not None:
+        problems.append(f"vmaf посчитан без запроса: {report.vmaf}")
+    if "vmaf" in report.checks:
+        problems.append("vmaf попал в checks и может бракануть файл")
+    return problems
+
+
+def case_vmaf_measured_when_asked(work: Path) -> list[str]:
+    src = work / "источник.mp4"
+    dst = work / "результат.mp4"
+    make_clip(src, 3.0)
+    subprocess.run(
+        ["ffmpeg", "-y", "-v", "error", "-i", str(src),
+         "-c:v", "hevc_videotoolbox", "-b:v", "2M", "-tag:v", "hvc1", str(dst)],
+        check=True,
+    )
+
+    report = verify_pair(probe(src), dst, CODEC_HEVC, measure_quality=True)
+    problems: list[str] = []
+    if not report.ok:
+        problems.append(f"пара забракована: {report.problems}")
+    if report.vmaf is None:
+        problems.append("vmaf не посчитан при measure_quality=True")
+    elif not (0 <= report.vmaf <= 100):
+        problems.append(f"vmaf вне диапазона 0..100: {report.vmaf}")
+    return problems
+
+
 def main() -> int:
     cases = [
         ("жалобы аппаратного декодера опознаются", case_hw_marks_recognised),
@@ -214,6 +256,8 @@ def main() -> int:
         ("короткий результат бракуется", case_short_result_rejected),
         ("потерянные кадры ловятся", case_missing_frames_rejected),
         ("честная пара проходит все четыре проверки", case_good_pair_passes),
+        ("vmaf не считается без запроса", case_vmaf_off_by_default),
+        ("vmaf считается по запросу", case_vmaf_measured_when_asked),
     ]
     print("Проверка результата (CLAUDE.md §2 и §2.1)\n")
     results = [run_case(name, fn) for name, fn in cases]

@@ -567,6 +567,8 @@ body {
 
 .settings__key { font-size: 12px; color: var(--muted); }
 
+.settings__value { font-size: 12px; color: var(--text); font-variant-numeric: tabular-nums; }
+
 .seg { display: flex; gap: 3px; padding: 2px; background: rgba(0, 0, 0, 0.35); border-radius: 9px; }
 
 .seg__item {
@@ -595,3 +597,9 @@ body {
 .settings__version { font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
 
 #settings-close { padding: 4px 11px; font-size: 11.5px; }
+
+body.drag-over .shell {
+  outline: 2px dashed var(--accent);
+  outline-offset: -6px;
+  border-radius: var(--radius-sidebar);
+}

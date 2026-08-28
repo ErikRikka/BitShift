@@ -31,6 +31,11 @@ STRINGS: dict[str, dict[str, str]] = {
     "verified_count": {"ru": "проверено {done}/{total}", "en": "verified {done}/{total}"},
     "verifying_now": {"ru": "проверяю {n}", "en": "verifying {n}"},
     "paused": {"ru": "пауза", "en": "paused"},
+    "notify_title": {"ru": "BitShift — готово", "en": "BitShift — done"},
+    "history_summary": {
+        "ru": "Сэкономлено всего: {saved} · {n} файлов",
+        "en": "Saved so far: {saved} · {n} files",
+    },
 
     "meta_files": {"ru": "{n} файлов", "en": "{n} files"},
     "meta_folders": {"ru": "папок {n}", "en": "{n} folders"},

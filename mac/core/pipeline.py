@@ -102,6 +102,7 @@ class Settings:
     verify_jobs_while_encoding: int = VERIFY_JOBS_WHILE_ENCODING
     use_staging: bool | None = None
     trash_originals: bool = False
+    measure_quality: bool = False
 
     def effective_jobs(self) -> int:
         return 1 if self.codec.software else max(1, self.jobs)
@@ -545,6 +546,7 @@ class Pipeline:
             job.report = verify_pair(
                 job.info, job.encoded, self.settings.codec,
                 src_frames=job.src_frames,
+                measure_quality=self.settings.measure_quality,
                 on_progress=verify_progress,
                 on_pid=self._track_pid,
             )

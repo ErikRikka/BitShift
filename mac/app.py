@@ -51,6 +51,8 @@ from core.config import (
     WINDOW_PUSH_INTERVAL,
     WINDOW_WIDTH,
 )
+from core.notify import send as send_notification
+from core.staging import eject as eject_volume, volume_info
 from core.tools import icon_path, resources_dir
 from core.trash import move_to_trash, trash_available
 
@@ -113,6 +115,9 @@ class Api:
         self.recursive = DEFAULT_RECURSIVE
         self.trash = trash_available()
         self.shutdown_after = False
+        self.eject_after = False
+        self.history = saved_prefs.get("history") or {"files": 0, "saved_bytes": 0}
+        self.measure_quality = False
 
         self.jobs: list[Job] = []
         self.skipped: list[Job] = []
@@ -165,6 +170,7 @@ class Api:
             recursive=self.recursive,
             audio=self.audio,
             trash_originals=self.trash,
+            measure_quality=self.measure_quality,
         )
 
     def _selected_jobs(self) -> list[Job]:
@@ -181,6 +187,8 @@ class Api:
             share = f" · −{job.saved_bytes * 100 / job.src_bytes:.0f}%" if job.src_bytes else ""
             detail = self._t("detail_result", codec=self._codec_name(self.codec),
                              size=self._size(job.dst_bytes), share=share)
+            if job.report is not None and job.report.vmaf is not None:
+                detail += f" · VMAF {job.report.vmaf:.1f}"
         elif job.note and job.state in (State.ENCODING, State.QUEUED):
             detail = job.note
         elif job.state is State.FAILED and job.message:
@@ -285,6 +293,17 @@ class Api:
         if self.paused:
             parts.append(self._t("paused"))
         return percent, " · ".join(parts)
+
+    def _notify_text(self) -> str:
+        selected = self._selected_jobs()
+        total = len(selected)
+        done = sum(1 for j in selected if j.state in TERMINAL)
+        stopped = sum(1 for j in selected if j.state is State.STOPPED)
+        failed = sum(1 for j in selected if j.state is State.FAILED)
+        parts = [self._t("processed", done=done - stopped, total=total)]
+        if failed:
+            parts.append(self._t("failed_n", n=failed))
+        return " · ".join(parts)
 
     def _folder_short(self) -> str:
         if not self.folder:
@@ -408,6 +427,9 @@ class Api:
             "shutdown_after": self.shutdown_after,
             "shutdown_in": self.shutdown_left(),
             "shutdown_error": self._shutdown_error,
+            "eject_after": self.eject_after,
+            "measure_quality": self.measure_quality,
+            "history_text": self._history_text(),
             "trash": self.trash,
             "trash_available": trash_available(),
             "running": self.running,
@@ -472,6 +494,16 @@ class Api:
             self.shutdown_after = bool(value)
         return self.get_state()
 
+    def set_eject_after(self, value: bool) -> dict:
+        if not self.running:
+            self.eject_after = bool(value)
+        return self.get_state()
+
+    def set_measure_quality(self, value: bool) -> dict:
+        if not self.running:
+            self.measure_quality = bool(value)
+        return self.get_state()
+
     def set_lang(self, key: str) -> dict:
         chosen = normalize_lang(key)
         if chosen != self.lang:
@@ -493,6 +525,27 @@ class Api:
                 self.deselected.add(target)
         return self.get_state()
 
+
+    def add_dropped(self, paths: list[str]) -> dict:
+        if self.running:
+            return self.get_state()
+
+        folders: list[Path] = []
+        files: list[Path] = []
+        for raw in paths:
+            path = Path(raw)
+            if path.is_dir():
+                folders.append(path)
+            elif path.is_file():
+                files.append(path)
+
+        if folders or files:
+            self.folders = folders
+            self.files = files
+            self.deselected.clear()
+            self._rescan()
+            self._push()
+        return self.get_state()
 
     def choose_folder(self) -> dict:
         if self.running:
@@ -574,6 +627,11 @@ class Api:
             finally:
                 self.stopping = False
                 self._push()
+                if natural:
+                    self._record_history()
+                    send_notification(self._t("notify_title"), self._notify_text())
+                if self.eject_after and natural:
+                    self._eject_volumes()
                 if self.shutdown_after and natural:
                     self._arm_shutdown()
 
@@ -619,6 +677,40 @@ class Api:
 
     def _note(self, text: str) -> None:
         note_to_log(text)
+
+    def _record_history(self) -> None:
+        done = [j for j in self._selected_jobs() if j.state in (State.DONE, State.TRASHED)]
+        if not done:
+            return
+        self.history = {
+            "files": int(self.history.get("files", 0)) + len(done),
+            "saved_bytes": (
+                int(self.history.get("saved_bytes", 0))
+                + sum(j.saved_bytes for j in done)
+            ),
+        }
+        prefs.remember(history=self.history)
+
+    def _history_text(self) -> str:
+        files = int(self.history.get("files", 0))
+        if not files:
+            return ""
+        saved = self._size(float(self.history.get("saved_bytes", 0)))
+        return self._t("history_summary", saved=saved, n=files)
+
+    def _eject_volumes(self) -> None:
+        mounts: list[Path] = []
+        for job in self._selected_jobs():
+            try:
+                info = volume_info(job.src.parent)
+            except OSError:
+                continue
+            if info.is_external_usb and info.mount_point not in mounts:
+                mounts.append(info.mount_point)
+        for mount in mounts:
+            ok, error = eject_volume(mount)
+            if not ok:
+                self._note(f"извлечь {mount.name} не вышло: {error}")
 
 
     def shutdown_left(self) -> int | None:
@@ -819,6 +911,16 @@ def apply_native_titlebar(window: webview.Window) -> None:
     AppHelper.callAfter(apply)
 
 
+def setup_drag_drop(window: webview.Window, api: Api) -> None:
+    def on_drop(event) -> None:
+        files = (event.get("dataTransfer") or {}).get("files", [])
+        paths = [f["pywebviewFullPath"] for f in files if "pywebviewFullPath" in f]
+        if paths:
+            api.add_dropped(paths)
+
+    window.dom.body.events.drop += on_drop
+
+
 def main() -> int:
     api = Api()
     api._start_caffeinate()
@@ -840,6 +942,7 @@ def main() -> int:
     window.events.shown += lambda: apply_native_titlebar(window)
     window.events.shown += lambda: apply_glass(window)
     window.events.shown += apply_dock_identity
+    window.events.shown += lambda: setup_drag_drop(window, api)
     apply_dark_appearance()
     webview.start(apply_native_titlebar, window)
     api._stop_caffeinate()

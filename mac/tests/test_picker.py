@@ -68,6 +68,33 @@ def case_folder_plus_files(work: Path) -> list[str]:
     return problems
 
 
+def case_drag_drop_paths(work: Path) -> list[str]:
+    import app as gui
+
+    folder = work / "Съёмка"
+    make_clip(folder / "C0001.mp4")
+    lone = work / "C0002.mp4"
+    make_clip(lone)
+
+    api = gui.Api()
+    api.add_dropped([str(folder), str(lone), str(work / "нет-такого-файла.mp4")])
+
+    problems: list[str] = []
+    if api.folders != [folder]:
+        problems.append(f"папка не подхвачена: {api.folders}")
+    if api.files != [lone]:
+        problems.append(f"файл не подхвачен: {api.files}")
+    names = sorted(j.src.name for j in api.jobs)
+    if names != ["C0001.mp4", "C0002.mp4"]:
+        problems.append(f"скан после сброса нашёл не то: {names}")
+
+    before = (list(api.folders), list(api.files))
+    api.add_dropped(["/совсем/несуществующий/путь"])
+    if (api.folders, api.files) != before:
+        problems.append("сброс мусорных путей затёр текущий выбор")
+    return problems
+
+
 def case_wrong_mode_is_visible(work: Path) -> list[str]:
     make_clip(work / "ролик.mp4")
     subprocess.run(
@@ -188,6 +215,7 @@ def main() -> int:
         ("диалог выбора говорит на своём языке", case_picker_is_translated),
         ("видимые строки идут через словарь", case_ui_strings_go_through_lang),
         ("папка целиком плюс отдельные файлы", case_folder_plus_files),
+        ("drag-and-drop даёт настоящие пути", case_drag_drop_paths),
         ("файл чужого режима виден строкой", case_wrong_mode_is_visible),
         ("умолчания как в брифе части 2", case_defaults_match_brief),
         ("прогноз размера сходится с фактом", case_forecast_matches_reality),

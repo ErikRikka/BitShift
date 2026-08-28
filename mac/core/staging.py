@@ -94,6 +94,19 @@ def _mount_point(path: Path) -> Path:
     return path
 
 
+def eject(mount_point: Path) -> tuple[bool, str]:
+    try:
+        proc = subprocess.run(
+            ["diskutil", "eject", str(mount_point)],
+            capture_output=True, text=True, timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return False, str(exc)
+    if proc.returncode == 0:
+        return True, ""
+    return False, (proc.stderr or "").strip()[:200]
+
+
 @dataclass
 class Slot:
     directory: Path
