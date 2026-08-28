@@ -82,6 +82,19 @@
         </div>
       </header>
 
+      <div class="toolbar" id="toolbar" hidden>
+        <label class="check">
+          <input type="checkbox" id="sel-all">
+          <span class="check__box"></span>
+          <span class="check__text" data-i18n="toolbar_select_all">выбрать все видимые</span>
+        </label>
+        <div class="chips">
+          <button class="chip chip--on" id="chip-all" data-filter="all">Все</button>
+          <button class="chip" id="chip-bad" data-filter="bad" hidden>Брак</button>
+          <button class="chip" id="chip-skip" data-filter="skip" hidden>Пропущено</button>
+        </div>
+      </div>
+
       <div class="files" id="files">
         <div class="empty" id="empty">
           <div class="empty__title">Ничего не выбрано</div>

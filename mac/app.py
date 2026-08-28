@@ -525,6 +525,16 @@ class Api:
                 self.deselected.add(target)
         return self.get_state()
 
+    def set_selection(self, paths: list[str], selected: bool) -> dict:
+        if not self.running:
+            for raw in paths:
+                target = Path(raw)
+                if selected:
+                    self.deselected.discard(target)
+                else:
+                    self.deselected.add(target)
+        return self.get_state()
+
 
     def add_dropped(self, paths: list[str]) -> dict:
         if self.running:

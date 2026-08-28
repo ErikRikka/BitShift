@@ -7,7 +7,15 @@ from core.config import APP_NAME, APP_VERSION, BUNDLED_TOOLS_SUBDIR, NOTICE_NAME
 ROOT = Path(__file__).resolve().parent
 BUILD = ROOT / "build"
 
-UI_FILES = sorted(str(p) for p in (ROOT / "ui").iterdir() if p.is_file())
+def ui_data_files() -> list[tuple[str, list[str]]]:
+    groups: dict[str, list[str]] = {}
+    for path in (ROOT / "ui").rglob("*"):
+        if path.is_file():
+            rel_dir = str(path.relative_to(ROOT).parent)
+            groups.setdefault(rel_dir, []).append(str(path))
+    return [(rel_dir, sorted(files)) for rel_dir, files in sorted(groups.items())]
+
+
 TOOL_FILES = sorted(str(p) for p in (BUILD / BUNDLED_TOOLS_SUBDIR).iterdir()
                     if p.is_file())
 NOTICE_FILES = [str(ROOT.parent / name) for name in NOTICE_NAMES]
@@ -26,7 +34,7 @@ PLIST = {
 setup(
     name=APP_NAME,
     app=["app.py"],
-    data_files=[("ui", UI_FILES), (BUNDLED_TOOLS_SUBDIR, TOOL_FILES),
+    data_files=[*ui_data_files(), (BUNDLED_TOOLS_SUBDIR, TOOL_FILES),
                 ("", NOTICE_FILES)],
     options={
         "py2app": {

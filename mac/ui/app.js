@@ -11,6 +11,10 @@ const UI = {
     en: 'The picker takes whole folders and single files',
   },
   opt_recursive: { ru: 'Подпапки', en: 'Subfolders' },
+  toolbar_select_all: { ru: 'выбрать все видимые', en: 'select all visible' },
+  filter_all: { ru: 'Все', en: 'All' },
+  filter_bad: { ru: 'Брак', en: 'Rejected' },
+  filter_skip: { ru: 'Пропущено', en: 'Skipped' },
   opt_shutdown: { ru: 'Выключить мак после конвертации', en: 'Shut down the Mac when finished' },
   opt_eject: { ru: 'Извлечь диск(и) после конвертации', en: 'Eject the volume(s) when finished' },
   opt_vmaf: { ru: 'Проверять качество (VMAF) — медленнее', en: 'Check quality (VMAF) — slower' },
@@ -120,23 +124,87 @@ function badgeText(file) {
 
 function renderChoiceList(host, items, currentKey, onPick) {
   host.textContent = '';
+  host.setAttribute('role', 'radiogroup');
+  const pickable = items.filter((i) => i.available !== false);
+
+  const move = (from, dir) => {
+    const idx = pickable.indexOf(from);
+    if (idx === -1) return;
+    const next = pickable[(idx + dir + pickable.length) % pickable.length];
+    onPick(next.key);
+    requestAnimationFrame(() => host.querySelector('[aria-checked="true"]')?.focus());
+  };
+
   for (const item of items) {
     const el = document.createElement('div');
-    el.className = 'item' + (item.key === currentKey ? ' item--on' : '')
-      + (item.available === false ? ' item--off' : '');
+    const isOn = item.key === currentKey;
+    const isOff = item.available === false;
+    el.className = 'item' + (isOn ? ' item--on' : '') + (isOff ? ' item--off' : '');
     el.title = item.hint || item.note || '';
     el.innerHTML = `<span class="item__name">${escapeHtml(item.name)}</span>`
       + (item.note ? `<span class="item__note">${escapeHtml(item.note)}</span>` : '');
-    if (item.available !== false) {
+    if (!isOff) {
+      el.setAttribute('role', 'radio');
+      el.setAttribute('aria-checked', String(isOn));
+      el.tabIndex = isOn ? 0 : -1;
       el.addEventListener('click', () => onPick(item.key));
+      el.addEventListener('keydown', (e) => {
+        if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onPick(item.key); }
+        else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); move(item, 1); }
+        else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); move(item, -1); }
+      });
     }
     host.appendChild(el);
   }
 }
 
+let activeFilter = 'all';
+
+function matchesFilter(file, filter) {
+  if (filter === 'bad') return file.state_key === 'failed';
+  if (filter === 'skip') return file.state_key === 'skipped';
+  return true;
+}
+
+function renderToolbar(files) {
+  const bar = $('toolbar');
+  if (!bar) return;
+  bar.hidden = !files.length;
+  if (!files.length) return;
+
+  const running = state && state.running;
+  const counts = { all: files.length, bad: 0, skip: 0 };
+  for (const f of files) {
+    if (f.state_key === 'failed') counts.bad += 1;
+    if (f.state_key === 'skipped') counts.skip += 1;
+  }
+  $('chip-all').textContent = `${ui('filter_all')} · ${counts.all}`;
+  $('chip-bad').textContent = `${ui('filter_bad')} · ${counts.bad}`;
+  $('chip-bad').hidden = counts.bad === 0;
+  $('chip-skip').textContent = `${ui('filter_skip')} · ${counts.skip}`;
+  $('chip-skip').hidden = counts.skip === 0;
+  for (const btn of bar.querySelectorAll('.chip')) {
+    btn.classList.toggle('chip--on', btn.dataset.filter === activeFilter);
+  }
+  if (activeFilter !== 'all' && counts[activeFilter] === 0) {
+    activeFilter = 'all';
+    $('chip-all').classList.add('chip--on');
+    $('chip-bad').classList.remove('chip--on');
+    $('chip-skip').classList.remove('chip--on');
+  }
+
+  const visible = files.filter((f) => matchesFilter(f, activeFilter) && !f.skipped);
+  const selectable = visible.filter((f) => f.selected || !running);
+  const allOn = selectable.length > 0 && selectable.every((f) => f.selected);
+  const selAll = $('sel-all');
+  selAll.checked = allOn;
+  selAll.disabled = running || selectable.length === 0;
+}
+
 function renderFiles(files) {
   const host = $('files');
   host.textContent = '';
+  renderToolbar(files);
 
   if (!files.length) {
     const empty = document.createElement('div');
@@ -150,8 +218,9 @@ function renderFiles(files) {
   }
 
   const running = state && state.running;
+  const shown = files.filter((f) => matchesFilter(f, activeFilter));
 
-  for (const file of files) {
+  for (const file of shown) {
     const row = document.createElement('div');
     row.className = 'row' + (file.selected ? '' : ' row--off');
 
@@ -172,8 +241,10 @@ function renderFiles(files) {
 
     const info = document.createElement('div');
     info.style.minWidth = '0';
-    info.innerHTML = `<div class="row__name">${escapeHtml(file.label)}</div>`
-      + `<div class="row__detail">${escapeHtml(file.detail)}</div>`;
+    const detailHtml = file.state_key === 'failed'
+      ? `<div class="row__err"><span>${escapeHtml(file.detail)}</span></div>`
+      : `<div class="row__detail">${escapeHtml(file.detail)}</div>`;
+    info.innerHTML = `<div class="row__name">${escapeHtml(file.label)}</div>` + detailHtml;
     row.appendChild(info);
 
     const size = document.createElement('div');
@@ -379,6 +450,19 @@ $('modal-ok').addEventListener('click', () => {
 
 $('btn-browse').addEventListener('click', () => {
   window.pywebview.api.choose_folder().then(applyFromApi);
+});
+
+$('toolbar').addEventListener('click', (e) => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  activeFilter = chip.dataset.filter;
+  renderFiles(state.files);
+});
+
+$('sel-all').addEventListener('change', (e) => {
+  const visible = state.files.filter((f) => matchesFilter(f, activeFilter) && !f.skipped);
+  const paths = visible.map((f) => f.path);
+  window.pywebview.api.set_selection(paths, e.target.checked).then(applyFromApi);
 });
 
 $('btn-refresh').addEventListener('click', () => {

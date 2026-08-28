@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 APP_NAME = "BitShift"
-APP_VERSION = "3.9.0"
+APP_VERSION = "3.10.0"
 BUNDLED_TOOLS_SUBDIR = "bin"
 NOTICE_NAMES = ("LICENSE", "COPYING.GPLv2", "THIRD-PARTY.md", "THIRD-PARTY.ru.md")
 BUNDLE_REQUIRED = (
@@ -12,6 +12,8 @@ BUNDLE_REQUIRED = (
     "ui/index.html",
     "ui/style.css",
     "ui/app.js",
+    "ui/fonts/IBMPlexMono-400-cyrillic.woff2",
+    "ui/fonts/IBMPlexMono-400-latin.woff2",
 ) + NOTICE_NAMES
 ICON_NAME = "icon.icns"
 
