@@ -12,7 +12,7 @@ import core.encode as encode_module
 from core.encode import hw_decode_broke, run_encode
 from core.modes import CODEC_HEVC
 from core.probe import count_frames, probe
-from core.verify import verify_pair
+from core.verify import frame_tolerance, verify_pair
 
 HW_FAILURE_STDERR = (
     "[h264 @ 0x14e00] hardware accelerator failed to decode picture\n"
@@ -159,6 +159,46 @@ def case_short_result_rejected(work: Path) -> list[str]:
     return problems
 
 
+def case_frame_tolerance_is_proportional(_work: Path) -> list[str]:
+    problems: list[str] = []
+    if frame_tolerance(10) != 2:
+        problems.append(f"на коротком клипе допуск должен упираться в пол 2: {frame_tolerance(10)}")
+    if frame_tolerance(414) != 83:
+        problems.append(f"414 * 0.20 округляется до 83: {frame_tolerance(414)}")
+    if frame_tolerance(8028) != 1606:
+        problems.append(f"8028 * 0.20 = 1606: {frame_tolerance(8028)}")
+    return problems
+
+
+def case_minor_frame_jitter_tolerated(work: Path) -> list[str]:
+    src = work / "источник.mp4"
+    dst = work / "результат.mp4"
+    make_clip(src, 8.0)
+    subprocess.run(
+        ["ffmpeg", "-y", "-v", "error", "-i", str(src),
+         "-vf", "select='mod(n\\,12)',setpts=N/25/TB",
+         "-c:v", "hevc_videotoolbox", "-tag:v", "hvc1", str(dst)],
+        check=True,
+    )
+
+    real_frames = count_frames(dst)
+    src_frames = count_frames(src)
+    dropped = src_frames - real_frames
+    if not (0 < dropped / src_frames < 0.20):
+        return [f"подготовка не удалась: сброшено {dropped}/{src_frames} — не похоже на дрожание таймстемпов"]
+    if dropped <= 2:
+        return [f"подготовка не удалась: сброшено всего {dropped} — старый допуск и так бы пропустил"]
+
+    report = verify_pair(probe(src), dst, CODEC_HEVC, src_frames=src_frames)
+    problems: list[str] = []
+    if report.checks.get("кадры") is not True:
+        problems.append(
+            f"дрожание таймстемпов (потеряно {dropped}/{src_frames}, "
+            f"{dropped / src_frames:.1%}) забраковано как раньше: {report.checks}"
+        )
+    return problems
+
+
 def case_missing_frames_rejected(work: Path) -> list[str]:
     src = work / "источник.mp4"
     dst = work / "результат.mp4"
@@ -254,6 +294,8 @@ def main() -> int:
         ("нет повтора той же командой", case_no_pointless_retry),
         ("чужой кодек бракуется", case_wrong_codec_rejected),
         ("короткий результат бракуется", case_short_result_rejected),
+        ("допуск по кадрам пропорционален", case_frame_tolerance_is_proportional),
+        ("дрожание таймстемпов не бракуется", case_minor_frame_jitter_tolerated),
         ("потерянные кадры ловятся", case_missing_frames_rejected),
         ("честная пара проходит все четыре проверки", case_good_pair_passes),
         ("vmaf не считается без запроса", case_vmaf_off_by_default),

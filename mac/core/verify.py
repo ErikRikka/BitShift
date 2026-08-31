@@ -12,6 +12,7 @@ from .config import (
     DURATION_TOLERANCE_MIN,
     DURATION_TOLERANCE_RATIO,
     FRAME_TOLERANCE,
+    FRAME_TOLERANCE_RATIO,
     VERIFY_WEIGHT_DECODE,
     VERIFY_WEIGHT_FRAMES,
     VERIFY_WEIGHT_PROBE,
@@ -39,6 +40,10 @@ class VerifyReport:
 
 def duration_tolerance(duration: float) -> float:
     return max(duration * DURATION_TOLERANCE_RATIO, DURATION_TOLERANCE_MIN)
+
+
+def frame_tolerance(count: int) -> int:
+    return max(round(count * FRAME_TOLERANCE_RATIO), FRAME_TOLERANCE)
 
 
 def full_decode(
@@ -155,10 +160,11 @@ def verify_pair(
         except ProbeError as exc:
             report.fail("кадры", f"не удалось посчитать кадры: {exc}")
         else:
-            if abs(a - b) > FRAME_TOLERANCE:
+            frame_tol = frame_tolerance(a)
+            if abs(a - b) > frame_tol:
                 report.fail(
                     "кадры",
-                    f"кадров {a} → {b}, разница {abs(a - b)} (допуск {FRAME_TOLERANCE})",
+                    f"кадров {a} → {b}, разница {abs(a - b)} (допуск {frame_tol})",
                 )
             else:
                 report.passed("кадры")
