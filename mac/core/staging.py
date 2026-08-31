@@ -28,6 +28,8 @@ class VolumeInfo:
     def looks_slow(self) -> bool:
         if self.solid_state is False:
             return True
+        if self.solid_state is True:
+            return False
         return self.is_external_usb
 
 

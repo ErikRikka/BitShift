@@ -142,6 +142,28 @@ def case_volume_info_is_memoized(work: Path) -> list[str]:
     return []
 
 
+def case_looks_slow_trusts_solid_state(_work: Path) -> list[str]:
+    problems: list[str] = []
+
+    hdd_internal = VolumeInfo(mount_point=Path("/"), protocol="PCI-Express", solid_state=False)
+    if not hdd_internal.looks_slow:
+        problems.append("внутренний HDD не признан медленным")
+
+    ssd_external = VolumeInfo(mount_point=Path("/Volumes/T7"), protocol="USB", solid_state=True)
+    if ssd_external.looks_slow:
+        problems.append("внешний SSD (Samsung T7 и подобные) всё ещё считается медленным")
+
+    unknown_external = VolumeInfo(mount_point=Path("/Volumes/?"), protocol="USB", solid_state=None)
+    if not unknown_external.looks_slow:
+        problems.append("внешний диск с неизвестным типом не подстраховался кэшем")
+
+    unknown_internal = VolumeInfo(mount_point=Path("/"), protocol="PCI-Express", solid_state=None)
+    if unknown_internal.looks_slow:
+        problems.append("внутренний диск с неизвестным типом ошибочно признан медленным")
+
+    return problems
+
+
 def case_fast_disk_encodes_in_place(work: Path) -> list[str]:
     slow_dir = work / "медленная"
     fast_dir = work / "быстрая"
@@ -191,6 +213,36 @@ def case_fast_disk_encodes_in_place(work: Path) -> list[str]:
     for job in (fast, slow):
         if job.state is not State.DONE:
             problems.append(f"{job.name}: состояние {job.state.value} — {job.message}")
+    return problems
+
+
+def case_external_ssd_encodes_in_place(work: Path) -> list[str]:
+    make_clip(work / "T0001.MP4")
+
+    def fake_volume_info(path):
+        return VolumeInfo(mount_point=Path(str(path)), protocol="USB",
+                           solid_state=True, free_bytes=500 * 1024 ** 3)
+
+    real = pipeline_module.volume_info
+    pipeline_module.volume_info = fake_volume_info
+    try:
+        settings = Settings(
+            mode=MODES_BY_KEY["arc"], codec=CODEC_HEVC, folder=work,
+            recursive=True, jobs=1, use_staging=None, trash_originals=False,
+        )
+        todo, _ = scan(settings)
+        done = Pipeline(settings, todo).run()
+    finally:
+        pipeline_module.volume_info = real
+
+    problems: list[str] = []
+    if len(done) != 1:
+        return [f"взято файлов: {[j.name for j in done]}"]
+    job = done[0]
+    if job.slot is not None:
+        problems.append("внешний SSD (протокол USB, SolidState) всё равно ушёл в кэш")
+    if job.state is not State.DONE:
+        problems.append(f"{job.name}: состояние {job.state.value} — {job.message}")
     return problems
 
 
@@ -308,7 +360,9 @@ def main() -> int:
         ("оценка времени: хвост", case_eta_tail),
         ("прогресс считается по байтам", case_progress_counts_bytes),
         ("тип диска спрашивается один раз на том", case_volume_info_is_memoized),
+        ("looks_slow доверяет SolidState, а не только протоколу", case_looks_slow_trusts_solid_state),
         ("файл на быстром диске кодируется на месте", case_fast_disk_encodes_in_place),
+        ("внешний SSD кодируется на месте, а не через кэш", case_external_ssd_encodes_in_place),
         ("прогресс есть на всех четырёх этапах", case_every_stage_reports_progress),
         ("шкала проверки не стоит в нуле", case_verify_does_not_sit_at_zero),
         ("несколько папок за прогон", case_many_folders),
