@@ -51,7 +51,7 @@ from core.config import (
     WINDOW_PUSH_INTERVAL,
     WINDOW_WIDTH,
 )
-from core.notify import send as send_notification
+from core.notify import play_completion_sound, send as send_notification
 from core.staging import eject as eject_volume, volume_info
 from core.tools import icon_path, resources_dir
 from core.trash import move_to_trash, trash_available
@@ -118,6 +118,7 @@ class Api:
         self.eject_after = False
         self.history = saved_prefs.get("history") or {"files": 0, "saved_bytes": 0}
         self.measure_quality = False
+        self.finish_id = 0
 
         self.jobs: list[Job] = []
         self.skipped: list[Job] = []
@@ -433,6 +434,7 @@ class Api:
             "trash": self.trash,
             "trash_available": trash_available(),
             "running": self.running,
+            "finish_id": self.finish_id,
             "paused": self.paused,
             "stopping": self.stopping,
             "files": files,
@@ -636,10 +638,12 @@ class Api:
                 )
             finally:
                 self.stopping = False
-                self._push()
                 if natural:
+                    self.finish_id += 1
                     self._record_history()
                     send_notification(self._t("notify_title"), self._notify_text())
+                    play_completion_sound()
+                self._push()
                 if self.eject_after and natural:
                     self._eject_volumes()
                 if self.shutdown_after and natural:

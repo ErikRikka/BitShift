@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 APP_NAME = "BitShift"
-APP_VERSION = "3.10.2"
+APP_VERSION = "3.10.3"
 BUNDLED_TOOLS_SUBDIR = "bin"
 NOTICE_NAMES = ("LICENSE", "COPYING.GPLv2", "THIRD-PARTY.md", "THIRD-PARTY.ru.md")
 BUNDLE_REQUIRED = (
@@ -112,6 +112,8 @@ SHUTDOWN_DELAY = 120
 SHUTDOWN_COMMAND = (
     "osascript", "-e", 'tell application "System Events" to shut down'
 )
+
+COMPLETION_SOUND = Path("/System/Library/Sounds/Hero.aiff")
 
 PREFS_PATH = (
     Path.home() / "Library" / "Application Support" / APP_NAME / "settings.json"

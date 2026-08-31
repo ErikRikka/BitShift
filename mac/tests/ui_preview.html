@@ -240,6 +240,7 @@
       trash: true,
       trash_available: true,
       running: true,
+      finish_id: 0,
       paused: false,
       files: FILES.map(([label, size, state, progress, detail], i) => ({
         path: `/tmp/${i}`, label, detail, size_text: size, state,

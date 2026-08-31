@@ -28,6 +28,7 @@ const UI = {
   btn_stopping: { ru: 'Останавливаю…', en: 'Stopping…' },
   btn_encoding: { ru: 'Кодирую {percent}%', en: 'Encoding {percent}%' },
   btn_paused: { ru: 'На паузе', en: 'Paused' },
+  btn_done: { ru: 'Готово', en: 'Done' },
   btn_cancel: { ru: 'Отмена', en: 'Cancel' },
   btn_close: { ru: 'Закрыть', en: 'Close' },
   btn_to_trash: { ru: 'В Корзину', en: 'Move to Trash' },
@@ -358,15 +359,29 @@ function render() {
   renderLanguages();
 }
 
+const DONE_FLASH_MS = 6000;
+let lastFinishId = 0;
+let doneUntil = 0;
+
 function renderStartButton() {
   const btn = $('btn-start');
+
+  if (state.finish_id && state.finish_id !== lastFinishId) {
+    lastFinishId = state.finish_id;
+    doneUntil = Date.now() + DONE_FLASH_MS;
+    setTimeout(renderStartButton, DONE_FLASH_MS);
+  }
+  const showDone = !state.running && Date.now() < doneUntil;
+
   btn.disabled = state.running || !state.can_start;
   const working = state.running && !state.paused && !state.stopping;
   btn.classList.toggle('btn--working', working);
+  btn.classList.toggle('btn--done', showDone);
 
   let label = ui('btn_start');
   if (working) label = ui('btn_encoding', { percent: Math.round(state.percent * 100) });
   else if (state.running && state.paused) label = ui('btn_paused');
+  else if (showDone) label = ui('btn_done');
 
   if (!working) {
     btn.textContent = label;

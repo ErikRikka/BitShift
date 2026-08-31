@@ -95,6 +95,33 @@ def case_drag_drop_paths(work: Path) -> list[str]:
     return problems
 
 
+def case_finish_id_marks_natural_completion(work: Path) -> list[str]:
+    import app as gui
+
+    make_clip(work / "клип.mp4", seconds=1.0)
+    api = gui.Api()
+    api.add_dropped([str(work / "клип.mp4")])
+
+    problems: list[str] = []
+    if not api.jobs:
+        return [f"файл не подхватился: {api.jobs}"]
+    if api.finish_id != 0:
+        problems.append(f"finish_id не ноль до старта: {api.finish_id}")
+
+    api.start()
+    if api.worker is None:
+        return problems + ["start() не запустил конвейер"]
+    api.worker.join(timeout=60)
+    if api.worker.is_alive():
+        return problems + ["конвейер не завершился за 60с"]
+
+    if api.finish_id != 1:
+        problems.append(
+            f"finish_id не увеличился после естественного завершения: {api.finish_id}"
+        )
+    return problems
+
+
 def case_wrong_mode_is_visible(work: Path) -> list[str]:
     make_clip(work / "ролик.mp4")
     subprocess.run(
@@ -216,6 +243,7 @@ def main() -> int:
         ("видимые строки идут через словарь", case_ui_strings_go_through_lang),
         ("папка целиком плюс отдельные файлы", case_folder_plus_files),
         ("drag-and-drop даёт настоящие пути", case_drag_drop_paths),
+        ("finish_id растёт на естественном завершении", case_finish_id_marks_natural_completion),
         ("файл чужого режима виден строкой", case_wrong_mode_is_visible),
         ("умолчания как в брифе части 2", case_defaults_match_brief),
         ("прогноз размера сходится с фактом", case_forecast_matches_reality),
