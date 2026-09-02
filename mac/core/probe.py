@@ -48,6 +48,11 @@ class MediaInfo:
         pf = self.pix_fmt
         return bool(pf) and ("422" in pf or "444" in pf or "10le" in pf or "10be" in pf or "12le" in pf)
 
+    @property
+    def is_wide_chroma(self) -> bool:
+        pf = self.pix_fmt
+        return bool(pf) and ("422" in pf or "444" in pf)
+
     def color_args(self) -> list[str]:
         args: list[str] = []
         if self.color_primaries not in EMPTY_COLOR_VALUES:

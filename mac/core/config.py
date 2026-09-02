@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 APP_NAME = "BitShift"
-APP_VERSION = "3.10.3"
+APP_VERSION = "3.11.0"
 BUNDLED_TOOLS_SUBDIR = "bin"
 NOTICE_NAMES = ("LICENSE", "COPYING.GPLv2", "THIRD-PARTY.md", "THIRD-PARTY.ru.md")
 BUNDLE_REQUIRED = (
@@ -23,6 +23,15 @@ BITRATE_ABSOLUTE_MINIMUM = 500_000
 ARCHIVE_BPP = 0.096
 ARCHIVE_SKIP_MARGIN = 1.12
 MIN_GAIN_RATIO = 0.9
+
+QUALITY_RESOLUTION_THRESHOLD = 3000
+QUALITY_VALUES = {
+    ("arc", "4k"): 58,
+    ("arc", "hd"): 70,
+    ("slog", "4k"): 66,
+    ("slog", "hd"): 66,
+}
+QUALITY_OVERSHOOT_RATIO = 1.3
 LANGUAGES = ("ru", "en")
 DEFAULT_LANG = "ru"
 DEFAULT_MODE = "arc"

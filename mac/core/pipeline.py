@@ -29,7 +29,9 @@ from .encode import (
     carry_timestamps, error_summary, is_result_name, result_path, run_encode,
 )
 from .estimate import output_bytes_guess
-from .modes import AUDIO_AAC, AUDIO_ORIGINAL, Codec, Mode, should_skip, target_bitrate
+from .modes import (
+    AUDIO_AAC, AUDIO_ORIGINAL, Codec, Mode, quality_value, should_skip, target_bitrate,
+)
 from .probe import (
     MediaInfo, ProbeError, count_frames, frames_countable, probe, reset_probe_cache,
 )
@@ -448,6 +450,16 @@ class Pipeline:
             if self._on_update:
                 self._on_update(job)
 
+        def on_quality_retry() -> None:
+            job.note = "переделываю: по качеству вышло слишком много — фиксированный битрейт"
+            self._log(f"{job.name}: кодирование по качеству перебрало — переделываю фиксированным битрейтом")
+            if self._on_update:
+                self._on_update(job)
+
+        quality = None
+        if self.settings.codec.key == "hevc":
+            quality = quality_value(self.settings.mode, job.info.width, job.info.height)
+
         def encode_with(audio_mode: str):
             with self._cond:
                 self._encoding_now += 1
@@ -461,6 +473,8 @@ class Pipeline:
                     on_progress=progress, on_pid=self._track_pid,
                     should_stop=self._stop.is_set,
                     on_retry=on_retry,
+                    on_quality_retry=on_quality_retry,
+                    quality=quality,
                 )
             finally:
                 with self._cond:

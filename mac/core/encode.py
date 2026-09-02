@@ -19,11 +19,12 @@ from .config import (
     FFMPEG_NOISE_MARKS,
     FFMPEG_STDERR_TAIL_LINES,
     PRORES_PROFILE_HQ,
+    QUALITY_OVERSHOOT_RATIO,
     RESULT_SUFFIX,
 )
 from .tools import tool_path
 from .modes import AUDIO_ORIGINAL, Codec
-from .probe import MediaInfo
+from .probe import MediaInfo, ProbeError, probe
 
 
 def hw_decode_possible(codec_name: str) -> bool:
@@ -98,6 +99,8 @@ def _pix_fmt_for(info: MediaInfo, codec: Codec) -> str | None:
         return "p210le"
     if codec.key == "av1":
         return "yuv420p10le" if wide_or_deep else "yuv420p"
+    if info.is_wide_chroma:
+        return "p210le"
     return "p010le" if wide_or_deep else "yuv420p"
 
 
@@ -134,6 +137,7 @@ def build_command(
     audio_mode: str = AUDIO_ORIGINAL,
     hw_decode: bool = True,
     progress: bool = True,
+    quality: int | None = None,
 ) -> list[str]:
     args: list[str] = [ffmpeg_path(), "-y", "-hide_banner", "-loglevel", "error"]
     if progress:
@@ -155,9 +159,14 @@ def build_command(
     elif codec.key == "av1":
         args += ["-preset", codec.preset, "-b:v", str(int(target_bitrate))]
     else:
-        args += ["-b:v", str(int(target_bitrate))]
+        if quality is not None:
+            args += ["-q:v", str(quality)]
+        else:
+            args += ["-b:v", str(int(target_bitrate))]
         args += ["-tag:v", "hvc1"]
-        if pix_fmt == "p010le":
+        if pix_fmt == "p210le":
+            args += ["-profile:v", "main42210"]
+        elif pix_fmt == "p010le":
             args += ["-profile:v", "main10"]
 
     args += info.color_args()
@@ -197,6 +206,16 @@ def decode_looks_broken(stderr: str) -> bool:
     return any(hint in text for hint in FFMPEG_DECODE_TROUBLE_HINTS)
 
 
+def quality_overshot(dst: Path, target_bitrate: int) -> bool:
+    try:
+        result_info = probe(dst)
+    except ProbeError:
+        return False
+    if not result_info.bit_rate:
+        return False
+    return result_info.bit_rate > target_bitrate * QUALITY_OVERSHOOT_RATIO
+
+
 def run_encode(
     src: Path,
     dst: Path,
@@ -209,7 +228,9 @@ def run_encode(
     on_pid: Callable[[int, bool], None] | None = None,
     should_stop: Callable[[], bool] | None = None,
     on_retry: Callable[[str], None] | None = None,
+    on_quality_retry: Callable[[], None] | None = None,
     hw_decode: bool = True,
+    quality: int | None = None,
 ) -> EncodeResult:
     hw_real = hw_decode_used(info, hw_decode)
     attempts = [True, False] if hw_real else [hw_decode]
@@ -220,6 +241,7 @@ def run_encode(
             src, dst, info, codec, target_bitrate,
             audio_mode=audio_mode,
             hw_decode=use_hw, progress=on_progress is not None,
+            quality=quality,
         )
         code, stderr_text = run_with_progress(
             cmd,
@@ -241,6 +263,16 @@ def run_encode(
             audio_mode=audio_mode,
         )
         if last.ok:
+            if quality is not None and quality_overshot(dst, target_bitrate):
+                if on_quality_retry is not None:
+                    on_quality_retry()
+                return run_encode(
+                    src, dst, info, codec, target_bitrate,
+                    audio_mode=audio_mode,
+                    on_progress=on_progress, on_pid=on_pid,
+                    should_stop=should_stop, on_retry=on_retry,
+                    hw_decode=hw_decode, quality=None,
+                )
             if on_progress:
                 on_progress(1.0)
             return last

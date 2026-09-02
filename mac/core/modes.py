@@ -10,6 +10,8 @@ from .config import (
     BITRATE_ABSOLUTE_MINIMUM,
     DEFAULT_MODE,
     MIN_GAIN_RATIO,
+    QUALITY_RESOLUTION_THRESHOLD,
+    QUALITY_VALUES,
 )
 
 
@@ -176,6 +178,11 @@ def target_bitrate(
     target = max(target, float(mode.floor))
     target = max(target, float(BITRATE_ABSOLUTE_MINIMUM))
     return int(round(target))
+
+
+def quality_value(mode: Mode, width: int, height: int) -> int | None:
+    tier = "4k" if max(width, height) >= QUALITY_RESOLUTION_THRESHOLD else "hd"
+    return QUALITY_VALUES.get((mode.key, tier))
 
 
 @dataclass(frozen=True)
