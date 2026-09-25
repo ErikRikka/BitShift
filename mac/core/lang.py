@@ -49,6 +49,7 @@ STRINGS: dict[str, dict[str, str]] = {
 
     "detail_result": {"ru": "→ {codec} · {size}{share}", "en": "→ {codec} · {size}{share}"},
     "detail_bitrate": {"ru": "{a} → {b} Мбит/с", "en": "{a} → {b} Mbps"},
+    "detail_bitrate_approx": {"ru": "{a} → ~{b} Мбит/с", "en": "{a} → ~{b} Mbps"},
 
     "state_waiting": {"ru": "ожидание", "en": "waiting"},
     "state_skipped": {"ru": "пропущен", "en": "skipped"},

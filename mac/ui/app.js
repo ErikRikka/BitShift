@@ -40,11 +40,12 @@ const UI = {
   group_codec: { ru: 'Кодек', en: 'Codec' },
   group_audio: { ru: 'Звук', en: 'Audio' },
   group_volume: { ru: 'Объём', en: 'Size' },
-  group_left: { ru: 'Осталось', en: 'Remaining' },
   vol_source: { ru: 'Объём исходников', en: 'Source size' },
   vol_forecast: { ru: 'После сжатия', en: 'After encoding' },
   vol_saved: { ru: 'Сэкономлено', en: 'Saved' },
-  vol_left: { ru: 'Примерно', en: 'About' },
+  hero_done: { ru: 'готово', en: 'done' },
+  hero_left: { ru: 'осталось', en: 'left' },
+  hero_saved: { ru: 'сэкономлено', en: 'saved' },
   settings_title: { ru: 'Настройки', en: 'Settings' },
   settings_lang: { ru: 'Язык', en: 'Language' },
   settings_author: { ru: 'Создано: Эрик Рикка', en: 'Created by Erik Rikka' },
@@ -315,12 +316,11 @@ function render() {
   savedRow.hidden = !state.saved_text;
   $('volume-saved').textContent = state.saved_text;
 
-  $('left').hidden = !state.left_text;
-  $('volume-left').textContent = state.left_text || '';
-
   renderFiles(state.files);
 
+  renderHero();
   $('progress-fill').style.width = `${Math.round(state.percent * 100)}%`;
+  $('progress-ghost').style.width = `${Math.round((state.encoded_share || 0) * 100)}%`;
   $('summary').textContent = state.summary;
 
   $('opt-recursive').checked = state.recursive;
@@ -363,6 +363,15 @@ const DONE_FLASH_MS = 6000;
 let lastFinishId = 0;
 let doneUntil = 0;
 
+function renderHero() {
+  $('hero').hidden = !(state.running || state.saved_short);
+  $('hero-percent').textContent = `${Math.round(state.percent * 100)}%`;
+  $('hero-left-cell').hidden = !state.left_text;
+  $('hero-left').textContent = state.left_text || '';
+  $('hero-saved-cell').hidden = !state.saved_short;
+  $('hero-saved').textContent = state.saved_short ? `−${state.saved_short}` : '';
+}
+
 function renderStartButton() {
   const btn = $('btn-start');
 
@@ -390,11 +399,14 @@ function renderStartButton() {
   let spin = btn.querySelector('.btn__spin');
   if (!spin) {
     btn.textContent = '';
+    const well = document.createElement('span');
+    well.className = 'btn__well';
     spin = document.createElement('span');
     spin.className = 'btn__spin';
+    well.append(spin);
     const text = document.createElement('span');
     text.className = 'btn__label';
-    btn.append(spin, text);
+    btn.append(well, text);
   }
   btn.querySelector('.btn__label').textContent = label;
 }

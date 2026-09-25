@@ -47,14 +47,6 @@
         </div>
       </section>
 
-      <section class="volume" id="left" hidden>
-        <div class="group__label" data-i18n="group_left">Осталось</div>
-        <div class="volume__row">
-          <span class="volume__key" data-i18n="vol_left">Примерно</span>
-          <span class="volume__val" id="volume-left">считаю…</span>
-        </div>
-      </section>
-
       <footer class="side__foot">
         <div class="path" id="folder-path" title="">Папка не выбрана</div>
         <div class="side__bottom">
@@ -102,8 +94,25 @@
       </div>
 
       <footer class="main__foot">
+        <div class="hero" id="hero" hidden>
+          <div class="hero__cell">
+            <span class="hero__num" id="hero-percent">0%</span>
+            <span class="hero__lbl" data-i18n="hero_done">готово</span>
+          </div>
+          <div class="hero__cell" id="hero-left-cell">
+            <span class="hero__num" id="hero-left">—</span>
+            <span class="hero__lbl" data-i18n="hero_left">осталось</span>
+          </div>
+          <div class="hero__cell" id="hero-saved-cell">
+            <span class="hero__num hero__num--ok" id="hero-saved">—</span>
+            <span class="hero__lbl" data-i18n="hero_saved">сэкономлено</span>
+          </div>
+        </div>
         <div class="progress">
-          <div class="progress__track"><div class="progress__fill" id="progress-fill"></div></div>
+          <div class="progress__track">
+            <div class="progress__ghost" id="progress-ghost"></div>
+            <div class="progress__fill" id="progress-fill"></div>
+          </div>
         </div>
         <div class="summary" id="summary">Готов к работе</div>
 

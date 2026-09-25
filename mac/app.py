@@ -19,7 +19,7 @@ from core.lang import human_size as size_text, normalize as normalize_lang, t as
 from core.eta import Estimator
 from core.modes import (
     AUDIO_MODES, AUDIO_MODES_BY_KEY, CODECS, Codec, DEFAULT_MODE,
-    MODES, MODES_BY_KEY,
+    MODES, MODES_BY_KEY, quality_value,
 )
 from core.pipeline import (
     AFTER_ENCODE, Job, Pipeline, Settings, State, TERMINAL, progress_bytes,
@@ -196,7 +196,7 @@ class Api:
             detail = job.message
         elif not skipped and job.target:
             detail = detail + " · " + self._t(
-                "detail_bitrate",
+                "detail_bitrate_approx" if self._quality_mode(info) else "detail_bitrate",
                 a=f"{info.bit_rate / 1e6:.1f}", b=f"{job.target / 1e6:.1f}",
             )
 
@@ -215,6 +215,20 @@ class Api:
             "selected": (not skipped) and job.src not in self.deselected,
             "skipped": skipped,
         }
+
+    def _quality_mode(self, info) -> bool:
+        if self.codec != "hevc" or self.mode not in MODES_BY_KEY:
+            return False
+        return quality_value(MODES_BY_KEY[self.mode], info.width, info.height) is not None
+
+    def _encoded_share(self, selected: list[Job]) -> float:
+        if not selected:
+            return 0.0
+        encoded = sum(
+            1 for j in selected
+            if j.encoded is not None or j.state in (State.DONE, State.TRASHED)
+        )
+        return encoded / len(selected)
 
     def _trashable(self) -> list[Job]:
         key = tuple(job.state for job in self.jobs)
@@ -279,11 +293,10 @@ class Api:
                 parts.append(self._t("delivering"))
             return percent, " · ".join(parts)
 
-        parts = [f"{percent * 100:.0f}%"]
-        parts.append(
+        parts = [
             self._t("encoding_count", done=encoded, total=total)
             + (self._t("in_flight", n=encoding) if encoding else "")
-        )
+        ]
         if verifying:
             parts.append(self._t("verified_count", done=verified, total=encoded)
                          + " · " + self._t("verifying_now", n=verifying))
@@ -445,6 +458,8 @@ class Api:
                 f"{self._size(saved)} · −{saved * 100 / source_bytes:.0f}%"
                 if saved and source_bytes else (self._size(saved) if saved else "")
             ),
+            "saved_short": self._size(saved) if saved else "",
+            "encoded_share": self._encoded_share(selected),
             "left_text": self._eta(),
             "percent": percent,
             "summary": summary,
